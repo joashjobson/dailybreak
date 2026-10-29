@@ -7,7 +7,7 @@ compatibility_date = "2026-09-01"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/", "/index.html", "/c/*"]
 
 [observability.logs]
 enabled = true
@@ -32,3 +32,13 @@ class_name = "DuelRoom"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["DuelRoom"]
+
+# Daily scores (for "#3 of 41 today") and group leaderboards. One Board per day and one per group.
+# Also made by Cloudflare on deploy. Never rename Board or change the v2 tag.
+[[durable_objects.bindings]]
+name = "BOARDS"
+class_name = "Board"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Board"]

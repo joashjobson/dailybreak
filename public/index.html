@@ -7,6 +7,13 @@
 <meta name="description" content="One quick game a day. Daily Chain: keep a word chain going for 90 seconds.">
 <meta property="og:title" content="Daily Chain · Daily Break">
 <meta property="og:description" content="Keep a word chain going for 90 seconds. Each answer's last letter starts the next one.">
+<meta property="og:image" content="/og/home.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Daily Chain · Daily Break">
 <meta name="theme-color" content="#FFD21F">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <script>try{var t=JSON.parse(localStorage.getItem("dc-theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
@@ -274,6 +281,30 @@ form.entry .btn{padding-inline:20px}
 .countdown{font:900 64px/1 var(--display);text-align:center;padding:10px 0}
 .score{font:800 22px/1.2 var(--display)}
 @media (prefers-reduced-motion: reduce){.tbonus{animation:none!important}}
+/* v5: challenges, streaks, groups */
+.chal{display:flex;gap:12px;align-items:center;background:var(--surface);border:2px solid var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 4px 0 var(--hazard),0 4px 0 2px var(--ink)}
+.chal .bigring{width:46px;height:52px;font-size:24px;border-radius:12px;box-shadow:none}
+.chal b{font:800 16px/1.2 var(--display)}
+.chal p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+.streak{font:700 12px/1 var(--mono);background:var(--hazard-ink);color:var(--hazard);padding:6px 9px;border-radius:999px;white-space:nowrap}
+.vs-line{font:800 17px/1.25 var(--display)}
+.groups{display:grid;gap:12px}
+.groups h3{font-size:19px}
+.grp{border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:8px}
+.grp-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.grp-top b{font:800 16px/1.2 var(--display);min-width:0;overflow-wrap:anywhere}
+.grp-top span{font:700 11px/1 var(--mono);color:var(--muted);letter-spacing:.08em}
+.lb{list-style:none;margin:0;padding:0;display:grid;gap:4px;counter-reset:lb}
+.lb li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;font-weight:600;font-size:15px}
+.lb li::before{counter-increment:lb;content:counter(lb);font:700 12px var(--mono);color:var(--muted)}
+.lb li.wait::before{content:"–"}
+.lb li.you span:first-child{text-decoration:underline;text-decoration-color:var(--hazard);text-decoration-thickness:4px;text-underline-offset:3px}
+.lb li .n{font:700 13px var(--mono);font-variant-numeric:tabular-nums}
+.lb li.wait{color:var(--muted)}
+.grp .row .btn{font-size:12px;padding:7px 12px}
+.gform{display:grid;gap:8px}
+.gform input{font:700 16px var(--body);padding:10px 14px;border-radius:999px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);width:100%;max-width:320px}
+#g-joincode{text-transform:uppercase;letter-spacing:.2em;font-family:var(--mono)}
 </style>
 </head>
 <body>
@@ -308,19 +339,35 @@ form.entry .btn{padding-inline:20px}
     <h1 class="home-h">One quick game a day.</h1>
     <p class="muted">A new puzzle every midnight. Free to play.</p>
   </div>
+  <div class="chal" id="h-chal" hidden></div>
   <a class="gcard" href="#daily" id="h-chaincard">
     <div class="gc-top"><span class="eyebrow">Game 1</span><span class="newtag">New today</span></div>
     <h2>Daily Chain</h2>
     <p>Keep a word chain going for 90 seconds. Each answer's last letter starts the next one.</p>
     <div class="gc-tiles" id="h-tiles" aria-hidden="true"><span>B</span><span class="q">?</span><span class="q">?</span><span class="q">?</span><span class="q">?</span></div>
-    <div class="gc-foot"><b id="h-chain">No. 1 · starts with B</b><span class="btn sm">Play</span></div>
+    <div class="gc-foot"><b id="h-chain">No. 1 · starts with B</b><span class="row" style="gap:8px"><span class="streak" id="h-streak" hidden></span><span class="btn sm" id="h-play">Play</span></span></div>
   </a>
+  <div class="card view" id="g-invite" hidden></div>
+  <div class="card groups" id="h-groups">
+    <div><h3>Your groups</h3><p class="muted small">Play against your friends, class or family. Everyone in a group sees a leaderboard for each day's chain.</p></div>
+    <div class="groups g-list"></div>
+    <div class="row g-btns"><button class="btn sm g-new" type="button">Make a group</button><button class="btn ghost sm g-join" type="button">Join with a code</button></div>
+  </div>
+  <div class="card gform" id="g-form" hidden>
+    <h3 id="g-formh" style="font-size:19px">Make a group</h3>
+    <input id="g-gname" maxlength="24" placeholder="Group name, like Year 10 crew" aria-label="Group name">
+    <input id="g-joincode" maxlength="5" placeholder="Group code" aria-label="Group code" autocapitalize="characters" spellcheck="false" hidden>
+    <input id="g-pname" maxlength="16" placeholder="Your name" aria-label="Your name" autocomplete="nickname">
+    <div class="row"><button class="btn sm" id="g-ok" type="button">Make it</button><button class="btn ghost sm" id="g-cancel" type="button">Cancel</button></div>
+    <div class="msg" id="g-msg" role="status" aria-live="polite"></div>
+  </div>
   <div class="ad">Ad space</div>
 </section>
 
 <!-- DAILY -->
 <section class="view" id="v-daily">
   <div class="view" id="d-start">
+    <div class="chal" id="d-chal" hidden></div>
     <div class="plate">
       <p class="eyebrow" id="d-num">Daily Chain No. 1</p>
       <h1>Daily Chain</h1>
@@ -346,7 +393,7 @@ form.entry .btn{padding-inline:20px}
       </ul>
       <div class="medals" id="medals"></div>
       <div class="legend" id="legend"></div>
-      <div class="row"><button class="btn" id="d-go">Start the clock</button><span class="muted small">One ranked go per day.</span></div>
+      <div class="row"><button class="btn" id="d-go">Start the clock</button><span class="muted small" id="d-gonote">One ranked go per day.</span></div>
     </div>
     <div class="ad">Ad space</div>
   </div>
@@ -385,13 +432,21 @@ form.entry .btn{padding-inline:20px}
         <div class="disc n" id="d-enddisc">0</div>
         <div style="min-width:0"><h2 id="d-endbig">14 links</h2><span class="rank" id="d-rank">Top 20% today</span></div>
       </div>
+      <p class="vs-line" id="d-vs" hidden></p>
       <p id="d-endsub"></p>
       <ol class="chain wrapc" id="d-endchain"></ol>
       <div class="view" style="gap:10px">
+        <p class="eyebrow" id="d-sharelbl" hidden>Your ranked result today</p>
         <pre class="share" id="d-share"></pre>
-        <div class="row"><button class="btn sm" id="d-copy">Copy result</button><span class="muted small" id="d-copied" role="status"></span></div>
+        <input class="fname" id="d-name" maxlength="16" placeholder="Your name for the link" aria-label="Your name for the challenge link" autocomplete="nickname">
+        <div class="row"><button class="btn sm" id="d-sharebtn" type="button">Share and challenge</button><button class="btn ghost sm" id="d-copy">Copy</button><span class="muted small" id="d-copied" role="status"></span></div>
       </div>
     </div>
+    <div class="card groups" id="d-groups">
+    <div><h3>Your groups</h3><p class="muted small">Play against your friends, class or family. Everyone in a group sees a leaderboard for each day's chain.</p></div>
+    <div class="groups g-list"></div>
+    <div class="row g-btns"><button class="btn sm g-new" type="button">Make a group</button><button class="btn ghost sm g-join" type="button">Join with a code</button></div>
+  </div>
     <div class="two">
       <div class="card view"><h3 id="d-commonh" style="font-size:17px">Most said</h3><ul class="bars" id="d-common"></ul></div>
       <div class="card view"><h3 style="font-size:17px">Tomorrow</h3><p class="muted">A new letter and new prompts at midnight. Practice runs don't count.</p><button class="btn ghost sm" id="d-again">Practice run</button></div>
@@ -522,7 +577,7 @@ form.entry .btn{padding-inline:20px}
 
 <footer class="foot"><span><b>Daily Break</b> · one game a day, more coming</span><span>Every answer is checked, so only real names count.</span></footer>
 </main>
-<script src="answers.js"></script>
+<script src="/answers.js"></script>
 <script>
 (()=>{
 /* ---------- answer list (tier = points) ---------- */
@@ -679,7 +734,7 @@ const MEDALS=[[10,'Bronze','b'],[20,'Silver','s'],[30,'Gold','g']];
 const medalFor=n=>MEDALS.filter(m=>n>=m[0]).pop();
 const topPct=n=>Math.max(1,Math.round(100/(1+Math.exp((n-8)/3.5))));
 $('legend').innerHTML=[[1,'Common'],[2,'Uncommon · +2s'],[3,'Rare · +3s'],[5,'Very rare · +5s']].map(([p,t])=>`<span><i style="border-color:var(--r${p})"></i>${t}</span>`).join('');
-$('medals').innerHTML=MEDALS.map(([n,name,c])=>`<div class="medal"><span class="disc ${c}">${n}</span><div><b>${name}</b><span>${n} links · top ${topPct(n)}%</span></div></div>`).join('');
+$('medals').innerHTML=MEDALS.map(([n,name,c])=>`<div class="medal"><span class="disc ${c}">${n}</span><div><b>${name}</b><span>${n} links</span></div></div>`).join('');
 
 /* ---------- tabs ---------- */
 const VIEWS=['home','daily','duel','global'];
@@ -723,7 +778,7 @@ if(!reduce)setTimeout(demoStep,900);else renderChain($('demo'),DEMO.slice(0,6));
 const D={};let dTimer=null;
 function dStart(){
   ac();
-  Object.assign(D,{req:TODAY,cats:PROMPTS.slice(),used:new Set(),links:[],bonus:0,medal:0,swaps:0,checks:[],t0:Date.now(),end:Date.now()+CLOCK,ending:false,done:false});
+  Object.assign(D,{ranked:!ranked(),req:TODAY,cats:PROMPTS.slice(),used:new Set(),links:[],bonus:0,medal:0,swaps:0,checks:[],t0:Date.now(),end:Date.now()+CLOCK,ending:false,done:false});
   $('d-start').hidden=true;$('d-end').hidden=true;$('d-play').hidden=false;
   $('d-chain').innerHTML='';$('d-msg').textContent='';$('d-trap').hidden=true;
   document.querySelectorAll('.snapstamp').forEach(s=>s.remove());
@@ -801,7 +856,7 @@ function dFinish(){
   $('d-endnum').textContent=`Daily Chain No. ${dayNum} · Starts with ${start}`;
   const disc=$('d-enddisc');disc.className='disc '+(md?md[2]:'n');disc.textContent=n;
   $('d-endbig').textContent=md?`${md[1]} chain`:`${n} link${n===1?'':'s'}`;
-  $('d-rank').textContent=n?`Top ${topPct(n)}% today`:'No links this time';
+  $('d-rank').textContent=D.ranked?'Saving your score…':'Practice run';
   const ver=D.links.filter(a=>!a.unverified&&!a.bad),rare=ver.slice().sort((a,b)=>a.pct-b.pct)[0];
   const nextM=MEDALS.find(x=>n<x[0]);
   const swaps=D.swaps?` You swapped ${D.swaps} prompt${D.swaps===1?'':'s'}.`:'';
@@ -811,14 +866,16 @@ function dFinish(){
   const em={0:'⬜',1:'🟩',2:'🟦',3:'🟪',5:'🟥'},sqa=D.links.filter(a=>!a.bad).map(a=>em[a.unverified?0:a.pts]);
   const rows=[];for(let i=0;i<sqa.length;i+=10)rows.push(sqa.slice(i,i+10).join(''));
   const medal=md?` · ${{b:'🥉',s:'🥈',g:'🥇'}[md[2]]} ${md[1]}`:'';
-  $('d-share').textContent=`Daily Chain No. ${dayNum} · ${start}\n🔗 ${n} link${n===1?'':'s'}${medal} · +${D.bonus}s bonus\nTop ${n?topPct(n):100}% today\n${rows.join('\n')}${rare?`\nRarest: ${rare.name} (${fmtPct(rare.pct)})`:''}`;
+  if(D.ranked){const r={day:dayNum,n,letter:start,head:`🔗 ${n} link${n===1?'':'s'}${medal} · +${D.bonus}s bonus`,sq:rows.join('\n'),rank:'',sent:false};
+    const days=store.get('days',[]);if(!days.includes(dayNum))days.push(dayNum);store.set('days',days.slice(-400));store.set('ranked',r);submitScore(r)}
+  $('d-sharelbl').hidden=D.ranked;shareRender();vsRender(n);streakUI();
   $('d-copied').textContent='';
   const c0=PROMPTS[0];
   const pool=(BY[TODAY]||[]).filter(k=>inCat(k,c0)).map(k=>DICT.get(k)).sort((a,b)=>a.pts-b.pts||pct(b.k,b.pts)-pct(a.k,a.pts)).slice(0,5);
   $('d-commonh').textContent=`Most said for link 1`;
   $('d-common').innerHTML=pool.map(e=>{const p=pct(e.k,e.pts);return`<li><span>${esc(e.name)}</span><span class="num">${fmtPct(p)}</span><span class="pbar"><i style="width:${Math.min(100,p*2.5)}%"></i></span></li>`}).join('');
 }
-$('d-copy').onclick=()=>{const t=$('d-share').textContent;const ok=()=>{$('d-copied').textContent='Copied'};
+$('d-copy').onclick=()=>{const t=shareText();const ok=()=>{$('d-copied').textContent='Copied'};
   const sel=()=>{const r=document.createRange();r.selectNodeContents($('d-share'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('d-copied').textContent='Selected. Copy it from here.'};
   try{navigator.clipboard.writeText(t).then(ok,sel)}catch(e){sel()}};
 
@@ -992,6 +1049,105 @@ $('g-form').onsubmit=async e=>{e.preventDefault();const inp=$('g-input'),m=$('g-
   gPush({...r,who:'you',you:true});G.mine++;store.set('mine',G.mine);G.cool=Date.now()+20000;
   m.className='msg ok';m.textContent=(r.fixed?`Autocorrected to ${r.name}. `:'')+`You added link #${G.count.toLocaleString('en-AU')}. Come back in 20 seconds for another.`;inp.value='';gRender(true);};
 
+/* ---------- v5: streaks, challenge links, real ranks, groups ---------- */
+const ranked=()=>{const r=store.get('ranked',null);return r&&r.day===dayNum?r:null};
+function streak(){const days=new Set(store.get('days',[]));let d=days.has(dayNum)?dayNum:dayNum-1,n=0;while(days.has(d)){n++;d--}return n}
+function streakUI(){const n=streak(),el=$('h-streak');el.hidden=!n;el.textContent=`🔥 ${n} day${n===1?'':'s'}`;
+  const r=ranked();$('d-go').textContent=r?'Practice run':'Start the clock';
+  $('d-gonote').textContent=r?`You've had today's ranked go (${r.n} link${r.n===1?'':'s'}). Practice runs don't count.`:'One ranked go per day.'}
+const myName=()=>store.get('name','');
+const setName=v=>{v=v.trim().replace(/\s+/g,' ').slice(0,16);if(v){store.set('name',v);$('f-name').value=v}return v};
+
+/* a challenge link (/c/142-k-14?n=Archer) shows who to beat, then the address goes back to plain / */
+const cm=location.pathname.match(/^\/c\/(\d{1,5})-([a-z])-(\d{1,2})$/i);
+if(cm){const q=new URLSearchParams(location.search);store.set('chal',{day:+cm[1],letter:cm[2].toUpperCase(),links:+cm[3],name:(q.get('n')||'').trim().slice(0,16)||'Your friend'});
+  try{history.replaceState(null,'','/'+location.hash)}catch(e){}}
+const chal=()=>{const c=store.get('chal',null);return c&&c.day>=dayNum-1&&c.day<=dayNum?c:null};
+function chalUI(){const c=chal();
+  for(const id of ['h-chal','d-chal']){const el=$(id),same=c&&c.day===dayNum;el.hidden=!c||(id==='d-chal'&&!same);if(el.hidden)continue;
+    el.innerHTML=`<span class="bigring">${esc(c.letter)}</span><div style="min-width:0"><b>${esc(c.name)} got ${c.links} link${c.links===1?'':'s'}${same?' today':''}.</b><p>${same?(ranked()?'Your result is on the Daily Chain page.':'Same letter, same prompts. Can you beat it?'):`That was No. ${c.day}. Today's chain is a new one, so have a go.`}</p></div>`}}
+function vsRender(n){const c=chal(),el=$('d-vs');el.hidden=!(c&&c.day===dayNum&&D.ranked);if(el.hidden)return;
+  el.textContent=n>c.links?`You beat ${c.name} by ${n-c.links}. Send it back to them.`:n===c.links?`You tied with ${c.name} on ${n}.`:`${c.name} wins by ${c.links-n}. You can try again tomorrow.`}
+
+/* the share text always shows the ranked go, with a link that dares the reader to beat it */
+function chalLink(r){const nm=myName();return `${location.origin}/c/${r.day}-${r.letter.toLowerCase()}-${r.n}${nm?`?n=${encodeURIComponent(nm)}`:''}`}
+function shareText(){const r=ranked();if(!r)return $('d-share').textContent;const st=streak();
+  return [`Daily Chain No. ${r.day} · ${r.letter}`,r.head,st>1?`🔥 ${st}-day streak`:'',r.rank,r.sq,`Can you beat ${r.n}? ${chalLink(r)}`].filter(Boolean).join('\n')}
+function shareRender(){$('d-share').textContent=shareText()}
+$('d-name').value=myName();
+$('d-name').oninput=()=>{setName($('d-name').value);shareRender()};
+$('d-sharebtn').onclick=async()=>{const t=shareText();
+  if(navigator.share){try{await navigator.share({text:t});return}catch(e){if(e&&e.name==='AbortError')return}}
+  $('d-copy').onclick()};
+
+/* save the ranked go: the server says where it sits today and adds it to the player's groups */
+async function api(path,data){const r=await fetch(path,data?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)}:{cache:'no-store'});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Something went wrong. Try again.');return j}
+async function submitScore(r,groups){
+  try{const v=await api('/api/score',{day:r.day,pid,links:r.n,groups:groups||myGroups()});
+    r.rank=v.players>=20?`Top ${v.top}% today`:`#${v.rank} of ${v.players} today`;r.sent=true;store.set('ranked',r)}
+  catch(e){r.rank=r.rank||''}
+  if(!$('d-end').hidden&&ranked()){$('d-rank').textContent=D.ranked?(r.rank||"Saved on this device"):'Practice run';shareRender()}
+  groupsRender()}
+
+/* groups */
+const myGroups=()=>store.get('groups',[]);
+const GBOX=['h-groups','d-groups'];
+async function groupsRender(){const codes=myGroups();
+  const views=await Promise.all(codes.map(c=>api(`/api/group/${c}?day=${dayNum}&pid=${pid}`).catch(e=>({code:c,err:e.message}))));
+  const keep=views.filter(v=>!(v.err&&/no group/i.test(v.err))||false);
+  if(keep.length!==codes.length)store.set('groups',keep.map(v=>v.code));
+  const html=keep.map(groupHTML).join('');
+  for(const id of GBOX){const l=$(id).querySelector('.g-list');l.innerHTML=html;l.hidden=!html}}
+function groupHTML(v){
+  if(v.err)return `<div class="grp"><div class="grp-top"><b>Group ${esc(v.code)}</b></div><p class="muted small">Couldn't load this group right now.</p></div>`;
+  const done=v.today.filter(x=>x.links!=null),wait=v.today.filter(x=>x.links==null);
+  const li=x=>`<li class="${x.you?'you':''}${x.links==null?' wait':''}"><span>${esc(x.name)}${x.you?' (you)':''}</span><span class="n">${x.links==null?'not yet':x.links+' link'+(x.links===1?'':'s')}</span></li>`;
+  return `<div class="grp" data-code="${esc(v.code)}" data-name="${esc(v.name)}"><div class="grp-top"><b>${esc(v.name)}</b><span>${esc(v.code)} · ${v.members} ${v.members===1?'person':'people'}</span></div>
+    <ol class="lb">${done.map(li).join('')}${wait.slice(0,12).map(li).join('')}</ol>${wait.length>12?`<p class="muted small">and ${wait.length-12} more still to play</p>`:''}
+    ${v.yesterday?`<p class="muted small">Yesterday's winner: ${esc(v.yesterday.name)} with ${v.yesterday.links}.</p>`:''}
+    <div class="row"><button class="btn ghost sm g-inv" type="button">Invite</button><button class="btn ghost sm g-leave" type="button">Leave</button><span class="muted small g-note" role="status"></span></div></div>`}
+const groupURL=code=>`${location.origin}/#group=${code}`;
+function copyText(t,note){const done=m=>{if(note)note.textContent=m};try{navigator.clipboard.writeText(t).then(()=>done('Link copied'),()=>done(t))}catch(e){done(t)}}
+for(const id of GBOX)$(id).addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const g=b.closest('.grp');
+  if(b.classList.contains('g-new')||b.classList.contains('g-join')){if(id==='d-groups'){location.hash='home'}openForm(b.classList.contains('g-new')?'new':'join');return}
+  if(!g)return;const code=g.dataset.code,note=g.querySelector('.g-note');
+  if(b.classList.contains('g-inv')){const t=`Join my Daily Chain group "${g.dataset.name}": ${groupURL(code)}`;
+    if(navigator.share){try{await navigator.share({text:t});return}catch(err){if(err&&err.name==='AbortError')return}}copyText(groupURL(code),note);return}
+  if(b.classList.contains('g-leave')){if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to leave';setTimeout(()=>{delete b.dataset.sure;b.textContent='Leave'},4000);return}
+    try{await api(`/api/group/${code}/leave`,{pid})}catch(err){}store.set('groups',myGroups().filter(c=>c!==code));groupsRender()}});
+
+let gMode='new';
+function openForm(mode,code){gMode=mode;const f=$('g-form');f.hidden=false;$('g-msg').textContent='';
+  $('g-formh').textContent=mode==='new'?'Make a group':'Join a group';$('g-gname').hidden=mode!=='new';$('g-joincode').hidden=mode==='new';
+  $('g-joincode').value=code||'';$('g-pname').value=myName();
+  $('g-ok').textContent=mode==='new'?'Make it':'Join';setTimeout(()=>{(mode==='new'?$('g-gname'):$('g-joincode')).focus();f.scrollIntoView({block:'center'})},50)}
+$('g-cancel').onclick=()=>{$('g-form').hidden=true};
+async function joined(code){const g=myGroups();if(!g.includes(code))store.set('groups',[...g,code].slice(-10));
+  const r=ranked();if(r)await submitScore(r,[code]);else await groupsRender()}
+$('g-ok').onclick=async()=>{const m=$('g-msg'),pn=setName($('g-pname').value);
+  if(!pn){m.className='msg bad';m.textContent='Type your name so your friends know who you are.';$('g-pname').focus();return}
+  if(myGroups().length>=10){m.className='msg bad';m.textContent="You're in 10 groups already. Leave one first.";return}
+  $('g-ok').disabled=true;
+  try{if(gMode==='new'){const v=await api('/api/group/new',{name:$('g-gname').value.trim()||`${pn}'s group`,pid,pname:pn});await joined(v.code);
+      $('g-form').hidden=true;const note=document.querySelector(`#h-groups .grp[data-code="${v.code}"] .g-note`);if(note)note.textContent='Made it. Tap Invite to send it to friends.'}
+    else{const code=$('g-joincode').value.trim().toUpperCase();if(!/^[A-Z2-9]{5}$/.test(code))throw new Error('Group codes are 5 letters and numbers.');
+      await api(`/api/group/${code}/join`,{pid,pname:pn});await joined(code);$('g-form').hidden=true}}
+  catch(e){m.className='msg bad';m.textContent=e.message}
+  $('g-ok').disabled=false};
+
+/* opening an invite link (#group=CODE) asks before joining */
+async function groupInvite(){const m=location.hash.match(/^#group=([A-Za-z0-9]{5})$/),box=$('g-invite');if(!m){box.hidden=true;return}
+  const code=m[1].toUpperCase();try{history.replaceState(null,'','#home')}catch(e){}
+  if(myGroups().includes(code)){box.hidden=true;return}
+  try{const v=await api(`/api/group/${code}?day=${dayNum}&pid=${pid}`);
+    box.innerHTML=`<p class="eyebrow">Group invite</p><h3 style="font-size:22px">Join ${esc(v.name)}?</h3><p class="muted">${v.members} ${v.members===1?'person':'people'} in it. You'll see each other's Daily Chain scores every day.</p><div class="row"><button class="btn sm" type="button" id="gi-yes">Join</button><button class="btn ghost sm" type="button" id="gi-no">No thanks</button></div>`;
+    box.hidden=false;$('gi-no').onclick=()=>{box.hidden=true};$('gi-yes').onclick=()=>{box.hidden=true;openForm('join',code)}}
+  catch(e){box.innerHTML=`<p class="muted">${esc(e.message)}</p>`;box.hidden=false}}
+window.addEventListener('hashchange',groupInvite);
+
+streakUI();chalUI();groupInvite();groupsRender();
+{const r=ranked();if(r&&!r.sent)submitScore(r)}
 /* home card: today's game number and letter */
 $('h-date').textContent=dateStr;$('h-chain').textContent=`No. ${dayNum} · starts with ${L(TODAY)}`;$('h-tiles').firstElementChild.textContent=L(TODAY);
 show(location.hash.slice(1));
