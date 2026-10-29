@@ -1,0 +1,25 @@
+# Cloudflare Worker for Daily Break. src/worker.js answers /api/check; every other path is a file from public/.
+# The name below must match the Worker's name in the Cloudflare dashboard exactly. Keep it the same in every version.
+name = "daily-break"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[observability.logs]
+enabled = true
+
+[vars]
+# Wikipedia/Wikidata ask every app to say who it is, with a way to contact you. Put your email here.
+CONTACT_EMAIL = "joashjobson@gmail.com"
+# Your site's address. Change it to https://yourdomain.app once you buy the domain.
+SITE_URL = "https://daily-break.workers.dev"
+
+# Saved Wikipedia checks, so each unknown name is only looked up once (step 4 of the guide).
+# Create a KV namespace called daily-break-answers in Cloudflare, paste its ID below and remove the # from these three lines.
+# [[kv_namespaces]]
+# binding = "ANSWERS"
+# id = "PASTE-YOUR-KV-ID-HERE"

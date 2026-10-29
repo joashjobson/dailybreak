@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Break · Daily Chain</title>
+<meta name="description" content="One quick game a day. Daily Chain: keep a word chain going for 90 seconds.">
+<meta property="og:title" content="Daily Chain · Daily Break">
+<meta property="og:description" content="Keep a word chain going for 90 seconds. Each answer's last letter starts the next one.">
+<meta name="theme-color" content="#FFD21F">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=Martian+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow column like a hardware tag. Answers are steel links that hook together through a ring stamped with the shared letter. */
+:root{
+  --bg:#ECEEF0; --surface:#FFFFFF; --ink:#121418; --muted:#59606B; --line:#CFD4DA;
+  --steel:#3B424C; --steel-hi:#8E97A3;
+  --hazard:#FFD21F; --hazard-ink:#121418;
+  --r1:#1E9E57; --r2:#2563EB; --r3:#8B45E0; --r5:#E5304A; --r0:#9AA2AC;
+  --bronze:#B87333; --silver:#A9B1BB; --gold:#E6B422;
+  --bad:#D3263B; --good:#1E9E57; --warn-soft:#FFF4C2; --warn-ink:#6B4E00;
+  --stencil:"Unbounded","Arial Black",system-ui,sans-serif;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Martian Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1114; --surface:#181B20; --ink:#EDEFF2; --muted:#9AA2AD; --line:#2B3038;
+  --steel:#C3CAD3; --steel-hi:#FFFFFF; --r0:#5F6772;
+  --r1:#34C474; --r2:#5B8DFF; --r3:#B07BFF; --r5:#FF5A6E;
+  --bad:#FF5A6E; --good:#34C474; --warn-soft:#3A3010; --warn-ink:#FFE07A; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0F1114; --surface:#181B20; --ink:#EDEFF2; --muted:#9AA2AD; --line:#2B3038;
+  --steel:#C3CAD3; --steel-hi:#FFFFFF; --r0:#5F6772;
+  --r1:#34C474; --r2:#5B8DFF; --r3:#B07BFF; --r5:#FF5A6E;
+  --bad:#FF5A6E; --good:#34C474; --warn-soft:#3A3010; --warn-ink:#FFE07A; color-scheme:dark }
+
+[hidden]{display:none!important}
+html,body{height:auto}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:620px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--r2);outline-offset:2px}
+p{margin:0}
+h1,h2,h3{margin:0;font-family:var(--display);text-wrap:balance;letter-spacing:-.025em;line-height:1.02;font-weight:800}
+.muted{color:var(--muted)} .small{font-size:14px}
+.view{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font:700 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:2px solid var(--ink)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none}
+.brand svg{width:38px;height:30px;flex:none}
+.brand b{font:900 17px/1 var(--stencil);letter-spacing:-.02em}
+.right{display:flex;align-items:center;gap:6px}
+.tabs{display:flex;gap:2px;border:2px solid var(--ink);border-radius:999px;padding:2px;background:var(--surface)}
+.tabs button{border:0;background:none;padding:5px 12px;border-radius:999px;font:700 13px/1.2 var(--body);color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.icon-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);display:grid;place-items:center;font-size:15px;line-height:1}
+.icon-btn[aria-pressed="false"]{opacity:.5}
+
+main{padding-block:20px 48px}
+
+/* buttons */
+.btn{border:2px solid var(--ink);border-radius:999px;padding:13px 26px;font:800 16px/1 var(--display);letter-spacing:-.01em;background:var(--hazard);color:var(--hazard-ink);box-shadow:0 4px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.ghost{background:var(--surface);color:var(--ink)}
+.btn.sm{font-size:13px;padding:9px 16px;box-shadow:0 3px 0 var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* hero plate */
+.plate{position:relative;background:var(--hazard);color:var(--hazard-ink);border:2px solid var(--ink);border-radius:22px;padding:20px 18px 6px;overflow:hidden;box-shadow:0 6px 0 var(--ink)}
+.plate::before,.plate::after{content:"";position:absolute;top:14px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--ink)}
+.plate::before{left:14px}.plate::after{right:14px}
+.plate .eyebrow{color:var(--hazard-ink);opacity:.75;text-align:center}
+.plate h1{font-size:clamp(34px,10.5vw,64px);font-weight:900;text-align:center;margin-top:8px}
+.plate .sub{text-align:center;font-weight:600;margin-top:6px}
+.plate .strip{margin-inline:-18px;padding-inline:18px;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+
+/* today */
+.today{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.bigring{width:88px;height:96px;border-radius:18px;display:grid;place-items:center;font:900 46px/1 var(--display);background:var(--ink);color:var(--bg);box-shadow:0 6px 0 var(--hazard),0 6px 0 2px var(--ink);flex:none}
+.bigring.trap{background:var(--bad);color:#fff}
+.today h2{font-size:clamp(20px,5.5vw,26px)}
+
+.card{background:var(--surface);border:2px solid var(--ink);border-radius:18px;padding:18px}
+.facts{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.facts li{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start}
+.facts li::before{content:"";width:12px;height:14px;margin-top:5px;border-radius:3px;background:var(--ink);box-shadow:0 2px 0 var(--hazard)}
+
+/* medals */
+.medals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.medal{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid var(--line);border-radius:14px;min-width:0}
+.disc{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;font:800 14px/1 var(--display);color:#1a1205;border:2px solid rgba(0,0,0,.35);box-shadow:inset 0 3px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(0,0,0,.18)}
+.disc.b{background:var(--bronze)}.disc.s{background:var(--silver)}.disc.g{background:var(--gold)}.disc.n{background:var(--line);color:var(--muted)}
+.medal b{display:block;font:800 14px/1.1 var(--display)}
+.medal span{font-size:12px;color:var(--muted)}
+.medal.got{border-color:var(--ink)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:0;border-bottom:4px solid;display:inline-block}
+
+/* ===== the chain: words share their joining letter, like a word snake ===== */
+.strip{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-block:26px 18px;scroll-behavior:smooth}
+.strip::-webkit-scrollbar{display:none}
+.chain{list-style:none;margin:0;padding:0 4px;display:flex;align-items:flex-end;width:max-content}
+.chain.wrapc{flex-wrap:wrap;width:auto;row-gap:22px;padding:14px 0 0}
+.lk{display:flex;align-items:flex-end;position:relative}
+.t{width:36px;height:42px;flex:none;border-radius:9px;display:grid;place-items:center;font:800 20px/1 var(--display);background:var(--ink);color:var(--bg);box-shadow:0 4px 0 var(--r0);position:relative;z-index:1}
+.lk.r1 .t.end{box-shadow:0 4px 0 var(--r1)}.lk.r2 .t.end{box-shadow:0 4px 0 var(--r2)}.lk.r3 .t.end{box-shadow:0 4px 0 var(--r3)}.lk.r5 .t.end{box-shadow:0 4px 0 var(--r5)}
+.lk:not(.first):not(.rowstart) .t.start{display:none}
+.lk.first .t.start{background:var(--hazard);color:var(--hazard-ink);box-shadow:0 4px 0 var(--ink)}
+.w{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:0 4px;margin:0 -2px}
+.w small{position:absolute;bottom:100%;left:6px;margin-bottom:6px;font:700 9px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+.w b{display:block;height:42px;line-height:42px;font:700 20px/42px var(--display);text-transform:uppercase;letter-spacing:.04em;white-space:pre;border-bottom:4px solid var(--r0);padding:0 4px}
+.w b i{font-style:normal;display:inline-block}
+.lk.r1 .w b{border-color:var(--r1)}.lk.r2 .w b{border-color:var(--r2)}.lk.r3 .w b{border-color:var(--r3)}.lk.r5 .w b{border-color:var(--r5)}
+.lk.you .w b{background:color-mix(in srgb,var(--hazard) 28%,transparent);border-radius:6px 6px 0 0}
+.plate .t{background:var(--hazard-ink);color:var(--hazard)}
+.plate .lk.first .t.start{background:#fff;color:var(--hazard-ink)}
+.plate .w small{color:rgba(18,20,24,.6)}
+
+/* new answer: its letters drop in one by one from the shared letter, then its last letter lands */
+.lk.new .w b i{animation:drop .32s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--d) * 32ms)}
+.lk.new .t.end{animation:land .42s cubic-bezier(.3,1.7,.5,1) both;animation-delay:var(--ed)}
+.lk.new .w small{animation:fadein .3s both;animation-delay:var(--ed)}
+.t.pass{animation:pass .35s ease-out}
+@keyframes drop{from{transform:translateY(-22px);opacity:0}to{transform:none;opacity:1}}
+@keyframes land{0%{transform:translateY(-34px) scale(.6);opacity:0}60%{transform:translateY(3px) scale(1.12);opacity:1;background:var(--hazard);color:var(--hazard-ink)}100%{transform:none}}
+@keyframes pass{40%{transform:translateY(-8px) rotate(-6deg)}}
+@keyframes fadein{from{opacity:0}}
+
+/* time up: the last word falls apart */
+.lk.snapped .w b i,.lk.snapped .t.end,.lk.snapped .w small{animation:fall .8s cubic-bezier(.5,0,.9,.6) forwards;animation-delay:calc(var(--d,0) * 40ms)}
+@keyframes fall{0%{transform:none}100%{transform:translateY(120px) rotate(var(--r,40deg));opacity:0}}
+.snapstamp{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-6deg);font:900 40px/1 var(--stencil);color:var(--bad);border:5px solid var(--bad);padding:6px 16px;border-radius:10px;background:var(--surface);animation:stamp .35s cubic-bezier(.2,1.6,.4,1) both;z-index:5}
+@keyframes stamp{from{transform:translate(-50%,-50%) rotate(-6deg) scale(2.2);opacity:0}to{transform:translate(-50%,-50%) rotate(-6deg) scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){.lk.new .w b i,.lk.new .t.end,.lk.new .w small,.t.pass,.lk.snapped .w b i,.lk.snapped .t.end,.lk.snapped .w small,.snapstamp,.medalpop{animation:none!important}}
+.sugg{border:2px solid var(--ink);background:var(--hazard);color:var(--hazard-ink);border-radius:8px;padding:1px 8px;font:700 15px var(--body)}
+
+/* mini link for the global feed */
+.mini{display:inline-flex;align-items:center;border:3px solid var(--steel);border-radius:999px;padding:2px 10px;font:700 13px/1.3 var(--display);white-space:nowrap}
+.mini u{text-decoration:none;background:var(--hazard);color:var(--hazard-ink);border-radius:3px;padding:0 2px}
+
+/* play */
+.hud{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.stat{border:2px solid var(--ink);border-radius:14px;padding:8px 12px;background:var(--surface)}
+.stat b{display:block;font:700 26px/1.15 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.stat span{font:700 10px/1 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.stat.hot{border-color:var(--bad)} .stat.hot b{color:var(--bad)}
+.timebar{height:10px;border:2px solid var(--ink);border-radius:10px;overflow:hidden;background:var(--surface)}
+.timebar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(90deg,var(--hazard) 0 14px,var(--ink) 14px 16px);transition:width .1s linear}
+.timebar.hot i{background:var(--bad)}
+.timebar.thin{height:8px}
+
+.progress{display:flex;flex-direction:column;gap:6px}
+.ptrack{position:relative;height:30px}
+.ptrack .rail{position:absolute;left:0;right:0;top:12px;height:6px;border-radius:6px;background:var(--line)}
+.ptrack .fill{position:absolute;left:0;top:12px;height:6px;border-radius:6px;background:var(--ink);width:0;transition:width .4s cubic-bezier(.3,1.4,.5,1)}
+.ptrack .notch{position:absolute;top:0;transform:translateX(-50%)}
+.ptrack .notch .disc{width:30px;height:30px;font-size:13px}
+.ptrack .notch:last-child{transform:translateX(-100%)}
+.plabel{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);gap:10px}
+
+.ask{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.ask .bigring{width:72px;height:80px;font-size:38px;border-radius:15px}
+.ask h2{font-size:clamp(22px,6.5vw,32px)}
+.ask p{font-weight:600;color:var(--muted)}
+.ask .catword{display:block}
+.ask.flip .catword{animation:flipin .35s ease-out}
+@keyframes flipin{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+
+form.entry{display:flex;gap:8px}
+form.entry input{flex:1;min-width:0;font:700 20px var(--body);padding:12px 18px;border-radius:999px;border:2px solid var(--ink);background:var(--surface);color:var(--ink)}
+form.entry input:focus{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--hazard) 70%,transparent)}
+form.entry .btn{padding-inline:20px}
+.msg{min-height:24px;font-size:15px;font-weight:600}
+.msg.bad{color:var(--bad)}.msg.ok{color:var(--good)}.msg.info{color:var(--muted)}
+.trapnote{background:var(--warn-soft);color:var(--warn-ink);border-radius:12px;padding:8px 12px;font-size:14px;font-weight:600;border:2px dashed currentColor}
+.chainwrap{position:relative;border-block:2px dashed var(--line)}
+.medalpop{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 150px);z-index:30;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:10px 22px 10px 10px;box-shadow:0 5px 0 var(--ink);animation:mpop 2.2s cubic-bezier(.2,1.5,.4,1) forwards;pointer-events:none}
+.medalpop .disc{width:52px;height:52px;font-size:22px}
+.medalpop b{font:900 22px/1 var(--display)}
+@keyframes mpop{0%{transform:translate(-50%,-50%) scale(.4);opacity:0}12%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{opacity:1}100%{transform:translate(-50%,-80%);opacity:0}}
+
+/* end */
+.result{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.result .disc{width:96px;height:96px;font-size:40px;border-width:3px}
+.result h2{font-size:clamp(28px,8vw,44px)}
+.rank{display:inline-block;background:var(--ink);color:var(--bg);font:700 13px/1 var(--mono);padding:6px 10px;border-radius:999px;margin-top:8px}
+.share{font:500 13px/1.6 var(--mono);white-space:pre-wrap;background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:12px;margin:0;overflow-x:auto}
+.bars{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.bars li{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-weight:600}
+.bars .num{font:500 12px var(--mono);color:var(--muted)}
+.bars .pbar{grid-column:1/-1;height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.bars .pbar i{display:block;height:100%;background:var(--r1)}
+
+/* duel + global */
+.players{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.pl{padding:10px 14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);min-width:0}
+.pl.on{border-color:var(--ink);box-shadow:0 3px 0 var(--ink)}
+.pl b{display:block;font:800 16px/1.2 var(--display)}
+.pl span{font-size:13px;color:var(--muted)}
+.vs{font:900 15px var(--stencil);color:var(--muted)}
+.counter{font:700 clamp(32px,10vw,52px)/1 var(--mono);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.feed{list-style:none;margin:0;padding:0}
+.feed li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.feed li:last-child{border-bottom:0}
+.feed .who{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-align:right}
+.feed .n{font:500 11px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.feed li.mine .mini{background:color-mix(in srgb,var(--hazard) 35%,transparent)}
+.feed li.fresh{animation:flipin .35s ease-out}
+.live{display:inline-flex;align-items:center;gap:6px;font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--good)}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+
+.ad{border:2px dashed var(--line);border-radius:14px;min-height:100px;display:grid;place-items:center;color:var(--muted);font:600 12px var(--mono);text-transform:uppercase;letter-spacing:.1em}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);border-top:2px solid var(--ink);padding-top:14px;margin-top:8px}
+.foot b{font:900 13px var(--stencil);color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:520px){
+  .two,.medals{grid-template-columns:1fr}
+  .medal{padding:6px 10px}
+  .tabs button{padding:5px 9px}
+  .brand b{font-size:14px}
+  .brand svg{width:32px;height:26px}
+  .result .disc{width:72px;height:72px;font-size:30px}
+}
+
+/* home: the Daily Break shelf of games */
+.home-hero{display:flex;flex-direction:column;gap:8px;padding-top:6px}
+.home-h{font-size:clamp(32px,9vw,54px)}
+.gcard{position:relative;display:flex;flex-direction:column;gap:12px;background:var(--hazard);color:var(--hazard-ink);border:2px solid var(--ink);border-radius:22px;padding:20px;box-shadow:0 6px 0 var(--ink);text-decoration:none;transition:transform .12s,box-shadow .12s}
+.gcard:hover{transform:translateY(-2px);box-shadow:0 8px 0 var(--ink)}
+.gcard:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.gcard .eyebrow{color:var(--hazard-ink);opacity:.7}
+.gcard h2{font-size:clamp(34px,10vw,52px)}
+.gcard p{font-weight:600;max-width:46ch}
+.gc-top,.gc-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.gc-foot b{font:700 13px/1.2 var(--mono)}
+.newtag{font:700 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:var(--hazard-ink);color:var(--hazard);padding:6px 9px;border-radius:999px}
+.gc-tiles{display:flex;gap:6px;flex-wrap:wrap}
+.gc-tiles span{width:34px;height:38px;border-radius:8px;display:grid;place-items:center;font:800 18px/1 var(--display);background:var(--hazard-ink);color:var(--hazard)}
+.gc-tiles span.q{background:rgba(255,255,255,.45);color:rgba(18,20,24,.45);border:2px dashed rgba(18,20,24,.35)}
+.soon{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.soon div{border:2px dashed var(--line);border-radius:18px;padding:16px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.soon i{width:30px;height:28px;border-radius:7px;background:var(--line);display:block}
+.soon b{font:800 15px/1.1 var(--display)}
+.soon span{font-size:13px;color:var(--muted)}
+@media (max-width:520px){.soon{grid-template-columns:1fr 1fr 1fr;gap:8px}.soon div{padding:12px 10px}.soon b{font-size:13px}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#home" aria-label="Daily Break home">
+      <svg viewBox="0 0 78 62" aria-hidden="true">
+        <g fill="currentColor"><rect x="2" y="22" width="20" height="18" rx="5"/><rect x="25" y="22" width="20" height="18" rx="5"/><rect x="2" y="42" width="20" height="18" rx="5"/><rect x="25" y="42" width="20" height="18" rx="5"/><rect x="48" y="42" width="20" height="18" rx="5"/></g>
+        <rect x="54" y="6" width="20" height="18" rx="5" transform="rotate(18 64 15)" fill="#FFD21F" stroke="currentColor" stroke-width="3"/>
+      </svg>
+      <b>Daily Break</b>
+    </a>
+    <div class="right">
+      <nav class="tabs" role="tablist" aria-label="Game modes">
+        <button role="tab" id="tab-daily" data-v="daily" aria-selected="true">Chain</button>
+        <button role="tab" id="tab-duel" data-v="duel" aria-selected="false">Duel</button>
+        <button role="tab" id="tab-global" data-v="global" aria-selected="false">Global</button>
+      </nav>
+      <button class="icon-btn" id="snd" aria-pressed="true" aria-label="Sound on" title="Sound">♪</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- HOME -->
+<section class="view" id="v-home" hidden>
+  <div class="home-hero">
+    <p class="eyebrow" id="h-date">Today</p>
+    <h1 class="home-h">One quick game a day.</h1>
+    <p class="muted">A new puzzle every midnight. Free to play.</p>
+  </div>
+  <a class="gcard" href="#daily" id="h-chaincard">
+    <div class="gc-top"><span class="eyebrow">Game 1</span><span class="newtag">New today</span></div>
+    <h2>Daily Chain</h2>
+    <p>Keep a word chain going for 90 seconds. Each answer's last letter starts the next one.</p>
+    <div class="gc-tiles" id="h-tiles" aria-hidden="true"><span>B</span><span class="q">?</span><span class="q">?</span><span class="q">?</span><span class="q">?</span></div>
+    <div class="gc-foot"><b id="h-chain">No. 1 · starts with B</b><span class="btn sm">Play</span></div>
+  </a>
+  <div class="ad">Ad space</div>
+</section>
+
+<!-- DAILY -->
+<section class="view" id="v-daily">
+  <div class="view" id="d-start">
+    <div class="plate">
+      <p class="eyebrow" id="d-num">Daily Chain No. 1</p>
+      <h1>Daily Chain</h1>
+      <p class="sub">Each answer's last letter starts the next one.</p>
+      <div class="strip" id="demo-strip" aria-hidden="true"><ol class="chain" id="demo"></ol></div>
+    </div>
+
+    <div class="today">
+      <div class="bigring" id="d-letter">B</div>
+      <div class="view" style="gap:6px">
+        <p class="eyebrow" id="d-date">Today</p>
+        <h2 id="d-today">Today's chain starts with B</h2>
+        <p class="muted">90 seconds. The last letter of each answer starts the next one.</p>
+      </div>
+    </div>
+
+    <div class="card view">
+      <ul class="facts">
+        <li><span>Every link has a <b>surprise prompt</b>: a country, then maybe a famous person, then an animal. You see it when you get there.</span></li>
+        <li><span>There's <b>no end</b>. Add as many links as you can before the clock runs out.</span></li>
+        <li><span>Stuck on a prompt? <b>Swap it</b> for 5 seconds.</span></li>
+        <li><span><b>Rare answers score more.</b> What half the world says is worth 1. What almost nobody says is worth 5.</span></li>
+      </ul>
+      <div class="medals" id="medals"></div>
+      <div class="legend" id="legend"></div>
+      <div class="row"><button class="btn" id="d-go">Start the clock</button><span class="muted small">One ranked go per day.</span></div>
+    </div>
+    <div class="ad">Ad space</div>
+  </div>
+
+  <div class="view" id="d-play" hidden>
+    <div class="hud">
+      <div class="stat" id="d-tstat"><b id="d-time">90.0</b><span>Seconds</span></div>
+      <div class="stat"><b id="d-links">0</b><span>Links</span></div>
+      <div class="stat"><b id="d-pts">0</b><span>Points</span></div>
+    </div>
+    <div class="timebar" id="d-bar"><i id="d-bari"></i></div>
+    <div class="progress">
+      <div class="ptrack" id="d-ptrack"><div class="rail"></div><div class="fill" id="d-pfill"></div></div>
+      <div class="plabel"><span id="d-plabel">Bronze at 10 links</span><span id="d-plabel2">0 / 10</span></div>
+    </div>
+    <div class="card view">
+      <div class="ask" id="d-ask">
+        <div class="bigring" id="d-req">B</div>
+        <div style="min-width:0"><h2><span class="catword" id="d-cat">A country</span></h2><p id="d-askp">starting with B</p></div>
+      </div>
+      <form class="entry" id="d-form" autocomplete="off">
+        <input id="d-input" type="text" placeholder="Type an answer" aria-label="Your answer" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+        <button class="btn sm" type="submit">Link</button>
+      </form>
+      <div class="msg" id="d-msg" role="status" aria-live="polite"></div>
+      <div class="trapnote" id="d-trap" hidden></div>
+      <div class="row"><button class="btn ghost sm" id="d-swap" type="button">Swap prompt −5s</button><button class="btn ghost sm" id="d-quit" type="button">Stop</button></div>
+    </div>
+    <div class="chainwrap" id="d-chainwrap"><div class="strip" id="d-strip"><ol class="chain" id="d-chain"></ol></div></div>
+  </div>
+
+  <div class="view" id="d-end" hidden>
+    <div class="card view">
+      <p class="eyebrow" id="d-endnum">Daily Chain</p>
+      <div class="result">
+        <div class="disc n" id="d-enddisc">0</div>
+        <div style="min-width:0"><h2 id="d-endbig">14 links</h2><span class="rank" id="d-rank">Top 20% today</span></div>
+      </div>
+      <p id="d-endsub"></p>
+      <ol class="chain wrapc" id="d-endchain"></ol>
+      <div class="view" style="gap:10px">
+        <pre class="share" id="d-share"></pre>
+        <div class="row"><button class="btn sm" id="d-copy">Copy result</button><span class="muted small" id="d-copied" role="status"></span></div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card view"><h3 id="d-commonh" style="font-size:17px">Most said</h3><ul class="bars" id="d-common"></ul></div>
+      <div class="card view"><h3 style="font-size:17px">Tomorrow</h3><p class="muted">A new letter and new prompts at midnight. Practice runs don't count.</p><button class="btn ghost sm" id="d-again">Practice run</button></div>
+    </div>
+    <div class="ad">Ad space</div>
+  </div>
+</section>
+
+<!-- DUEL -->
+<section class="view" id="v-duel" hidden>
+  <div class="view" id="u-start">
+    <div class="card view">
+      <p class="eyebrow">Duel</p>
+      <h2 style="font-size:clamp(28px,8vw,40px)">You vs Chainbot</h2>
+      <p>Take turns adding links. You get 10 seconds a turn. End your answer on a hard letter like <b>Q</b> or <b>X</b> to trap the other side.</p>
+      <p class="muted small" id="u-record"></p>
+      <div class="row"><button class="btn" id="u-go">Start a duel</button></div>
+    </div>
+  </div>
+  <div class="view" id="u-play" hidden>
+    <div class="players">
+      <div class="pl on" id="u-you"><b>You</b><span id="u-youn">0 links</span></div>
+      <span class="vs">VS</span>
+      <div class="pl" id="u-bot"><b>Chainbot</b><span id="u-botn">0 links</span></div>
+    </div>
+    <div class="timebar thin" id="u-bar"><i id="u-bari"></i></div>
+    <div class="card view">
+      <div class="ask">
+        <div class="bigring" id="u-req">B</div>
+        <div style="min-width:0"><h2 id="u-askh" style="font-size:22px">Your turn</h2><p id="u-sub"></p></div>
+      </div>
+      <form class="entry" id="u-form" autocomplete="off">
+        <input id="u-input" type="text" placeholder="Type an answer" aria-label="Your answer" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+        <button class="btn sm" id="u-sub-btn" type="submit">Link</button>
+      </form>
+      <div class="msg" id="u-msg" role="status" aria-live="polite"></div>
+      <div class="trapnote" id="u-trap" hidden></div>
+    </div>
+    <div class="chainwrap"><div class="strip"><ol class="chain" id="u-chain"></ol></div></div>
+  </div>
+  <div class="view" id="u-end" hidden>
+    <div class="card view">
+      <h2 id="u-endbig" style="font-size:36px">You win</h2>
+      <p id="u-endsub"></p>
+      <ol class="chain wrapc" id="u-endchain"></ol>
+      <div class="row"><button class="btn" id="u-again">Rematch</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- GLOBAL -->
+<section class="view" id="v-global" hidden>
+  <div class="card view">
+    <div class="row" style="justify-content:space-between"><p class="eyebrow">The global chain</p><span class="live">Live</span></div>
+    <div class="counter" id="g-count">1,284,307</div>
+    <p class="muted small" id="g-today"></p>
+    <p>One chain for the whole world, never reset. No answer can repeat within 1,000 links.</p>
+  </div>
+  <div class="card view">
+    <div class="ask">
+      <div class="bigring" id="g-req">B</div>
+      <div style="min-width:0"><h2 id="g-askh" style="font-size:22px">Add the next link</h2><p>You've added <b id="g-mine">0</b> links.</p></div>
+    </div>
+    <form class="entry" id="g-form" autocomplete="off">
+      <input id="g-input" type="text" placeholder="Anything real" aria-label="Your answer" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+      <button class="btn sm" id="g-btn" type="submit">Add</button>
+    </form>
+    <div class="msg" id="g-msg" role="status" aria-live="polite"></div>
+    <ul class="feed" id="g-feed"></ul>
+  </div>
+</section>
+
+<footer class="foot"><span><b>Daily Break</b> · one game a day, more coming</span><span>Answers are checked against about 240,000 real names, then <a href="https://www.wikidata.org/" rel="noopener">Wikidata</a>.</span></footer>
+</main>
+<script src="answers.js"></script>
+<script>
+(()=>{
+/* ---------- answer list (tier = points) ---------- */
+const RAW={
+1:`Afghanistan,Albania,Algeria,Argentina,Australia,Austria,Bangladesh,Belgium,Brazil,Bulgaria,Cambodia,Canada,Chile,China,Colombia,Croatia,Cuba,Denmark,Egypt,England,Ethiopia,Fiji,Finland,France,Germany,Ghana,Greece,Hungary,Iceland,India,Indonesia,Iran,Iraq,Ireland,Israel,Italy,Jamaica,Japan,Kenya,Malaysia,Mexico,Morocco,Nepal,Netherlands,New Zealand,Nigeria,North Korea,Norway,Pakistan,Peru,Philippines,Poland,Portugal,Russia,Saudi Arabia,Scotland,Singapore,South Africa,South Korea,Spain,Sweden,Switzerland,Thailand,Turkey,Ukraine,United Kingdom,United States,Vietnam,Wales,Zimbabwe,Qatar,Yemen,London,Paris,Tokyo,New York,Sydney,Melbourne,Rome,Berlin,Dubai,Los Angeles,Moscow,Beijing,Brisbane,Perth,Adelaide,Madrid,Athens,Toronto,Chicago,Barcelona,Amsterdam,Taylor Swift,Elon Musk,Albert Einstein,Michael Jackson,Donald Trump,Barack Obama,Cristiano Ronaldo,Lionel Messi,Isaac Newton,Mozart,Beyonce,William Shakespeare,Napoleon,Abraham Lincoln,Queen Elizabeth,Apple,Banana,Orange,Elephant,Tiger,Lion,Dog,Cat,Eagle,Kangaroo,Koala,Zebra,Giraffe,Pizza,Chocolate,Television,Computer,iPhone,Eiffel Tower,Mount Everest,Amazon,Google,Olympics,World War II,Titanic,Sun,Moon,Earth,Mars,Ocean,Egg,Umbrella,Xylophone,Yoyo,Ice cream,Ant,Octopus,Dolphin,Shark,Snake,Rabbit,Horse`,
+2:`United Arab Emirates,Auckland,Bangkok,Cairo,Dublin,Edinburgh,Florence,Geneva,Hanoi,Istanbul,Jakarta,Kathmandu,Lisbon,Manila,Nairobi,Oslo,Prague,Quebec,Rio de Janeiro,Seoul,Tehran,Vienna,Warsaw,Yokohama,Zurich,Venice,Hobart,Darwin,Canberra,Cairns,Gold Coast,Texas,California,Florida,Hawaii,Alaska,Tasmania,Queensland,Victoria,Uruguay,Venezuela,Uganda,Oman,Kuwait,Laos,Mongolia,Ecuador,Estonia,Latvia,Lithuania,Luxembourg,Malta,Monaco,Jordan,Lebanon,Syria,Sri Lanka,Tanzania,Zambia,Bolivia,Paraguay,Panama,Haiti,Cyprus,Serbia,Romania,Slovakia,Slovenia,Belarus,Georgia,Armenia,Azerbaijan,Kazakhstan,Uzbekistan,Somalia,Sudan,Libya,Tunisia,Senegal,Mali,Niger,Rwanda,Angola,Namibia,Botswana,Madagascar,Mozambique,Cameroon,Nicaragua,Honduras,Guatemala,Costa Rica,El Salvador,Bahamas,Barbados,Bhutan,Brunei,Myanmar,Taiwan,Samoa,Tonga,Vanuatu,Papua New Guinea,Greenland,Antarctica,Africa,Asia,Europe,Sahara,Nile,Thames,Danube,Mississippi,Uluru,Grand Canyon,Niagara Falls,Great Barrier Reef,Stonehenge,Colosseum,Taj Mahal,Big Ben,Statue of Liberty,Sydney Opera House,Kilimanjaro,Alps,Himalayas,Andes,Adele,Ariana Grande,Billie Eilish,Bruno Mars,Drake,Ed Sheeran,Eminem,Harry Styles,Justin Bieber,Kanye West,Lady Gaga,Rihanna,Shakira,Snoop Dogg,Usher,Zendaya,Oprah Winfrey,Bill Gates,Steve Jobs,Mark Zuckerberg,Jeff Bezos,Nelson Mandela,Martin Luther King,Mahatma Gandhi,Winston Churchill,Julius Caesar,Cleopatra,Leonardo da Vinci,Pablo Picasso,Vincent van Gogh,Charles Darwin,Marie Curie,Nikola Tesla,Thomas Edison,Stephen Hawking,Galileo,Aristotle,Plato,Socrates,Usain Bolt,Serena Williams,Roger Federer,Novak Djokovic,LeBron James,Michael Jordan,Kobe Bryant,Tiger Woods,Muhammad Ali,Neymar,Kylian Mbappe,Erling Haaland,Don Bradman,Steve Irwin,Hugh Jackman,Chris Hemsworth,Margot Robbie,Kylie Minogue,Keanu Reeves,Tom Cruise,Tom Holland,Will Smith,Dwayne Johnson,Leonardo DiCaprio,Johnny Depp,Emma Watson,Daniel Radcliffe,Walt Disney,Charlie Chaplin,Elvis Presley,John Lennon,Freddie Mercury,Bob Marley,Queen Victoria,Henry VIII,King Charles,Prince Harry,Kim Kardashian,MrBeast,PewDiePie,Xi Jinping,Vladimir Putin,Joe Biden,Anthony Albanese,Kamala Harris,Ronald Reagan,John F Kennedy,George Washington,Genghis Khan,Alexander the Great,Joan of Arc,Mother Teresa,Anne Frank,Neil Armstrong,Yuri Gagarin,Amelia Earhart,James Cook,Ned Kelly,Avocado,Broccoli,Carrot,Mango,Pineapple,Strawberry,Watermelon,Kiwi,Lemon,Grape,Cherry,Peach,Potato,Tomato,Onion,Pasta,Sushi,Taco,Burger,Hot dog,Pancake,Vegemite,Pavlova,Lamington,Spaghetti,Noodle,Bread,Cheese,Yoghurt,Bicycle,Car,Train,Rocket,Helicopter,Submarine,Guitar,Piano,Violin,Drum,Trumpet,Clock,Lamp,Chair,Table,Pencil,Notebook,Keyboard,Robot,Diamond,Gold,Silver,Iron,Oxygen,Hydrogen,Volcano,Tornado,Rainbow,Lightning,Igloo,Pyramid,Castle,Bridge,Penguin,Owl,Parrot,Platypus,Wombat,Emu,Crocodile,Hippopotamus,Rhinoceros,Gorilla,Monkey,Panda,Bear,Wolf,Fox,Deer,Moose,Camel,Llama,Alpaca,Yak,Jaguar,Leopard,Cheetah,Whale,Jellyfish,Starfish,Turtle,Frog,Butterfly,Bee,Spider,Mosquito,Unicorn,Dragon,Vampire,Ninja,Pirate,Wizard,Zombie,Minecraft,Fortnite,Roblox,Pokemon,Mario,Lego,Barbie,Netflix,YouTube,TikTok,Instagram,Facebook,Microsoft,Tesla,Nike,Adidas,Samsung,Toyota,Ferrari,Lamborghini,McDonalds,Coca Cola,Starbucks,Harry Potter,Star Wars,Spider-Man,Batman,Superman,Iron Man,Hulk,Thor,Shrek,Frozen,Toy Story,The Simpsons,Bluey,Jupiter,Saturn,Venus,Mercury,Neptune,Uranus,Pluto,Galaxy,Comet,Asteroid,Black hole,Internet,Bitcoin,Euro,Dollar,Yen,Quiz,Christmas,Easter,Halloween,Moon Landing,Black Death,Cold War,French Revolution,Gold Rush,Great Depression,Industrial Revolution,Renaissance,Ice Age,World War I,Fall of the Berlin Wall,Big Bang,Brexit,Super Bowl,World Cup,Wimbledon,Melbourne Cup,Tour de France,Eurovision,Gallipoli,Anzac Day,Australia Day`,
+3:`Quito,Queenstown,Quezon City,Xinjiang,Zagreb,Zambezi,Zion National Park,Yangtze,Yellowstone,Yosemite,Yukon,Yerevan,Kabul,Kyoto,Kyiv,Krakow,Kolkata,Karachi,Jerusalem,Johannesburg,Juneau,Ottawa,Osaka,Orlando,Oxford,Ibiza,Iguazu Falls,Inverness,Ulaanbaatar,Utah,Utrecht,Valencia,Vancouver,Vatican City,Verona,Vladivostok,Wellington,Winnipeg,Wollongong,Alice Springs,Byron Bay,Ballarat,Bendigo,Geelong,Toowoomba,Townsville,Newcastle,Fremantle,Kakadu,Kimberley,Nullarbor,Snowy Mountains,Murray River,Mount Kosciuszko,Bondi Beach,Rottnest Island,Fraser Island,Lake Eyre,Dead Sea,Death Valley,Lake Titicaca,Mount Fuji,Machu Picchu,Petra,Angkor Wat,Chichen Itza,Easter Island,Galapagos,Great Wall of China,Hollywood,Las Vegas,Mumbai,Delhi,Shanghai,Hong Kong,Kuala Lumpur,Bali,Phuket,Marrakech,Casablanca,Cape Town,Lagos,Accra,Addis Ababa,Havana,Lima,Bogota,Santiago,Buenos Aires,Sao Paulo,Montevideo,Caracas,Reykjavik,Helsinki,Stockholm,Copenhagen,Budapest,Bucharest,Sofia,Belgrade,Kosovo,Montenegro,Moldova,Liechtenstein,San Marino,Andorra,Eritrea,Djibouti,Gabon,Togo,Benin,Burundi,Malawi,Lesotho,Eswatini,Comoros,Seychelles,Mauritius,Maldives,Kiribati,Tuvalu,Nauru,Palau,Micronesia,Kyrgyzstan,Tajikistan,Turkmenistan,Timor-Leste,Quentin Tarantino,Queen Latifah,Zinedine Zidane,Zac Efron,Zlatan Ibrahimovic,Yoko Ono,Kevin Hart,Kendrick Lamar,Katy Perry,Kurt Cobain,Karl Marx,Jane Austen,Jimi Hendrix,JK Rowling,Jacinda Ardern,Uma Thurman,Ozzy Osbourne,Olivia Rodrigo,Oscar Wilde,Orville Wright,Ada Lovelace,Alan Turing,Agatha Christie,Archimedes,Ludwig van Beethoven,Bach,Banksy,Cathy Freeman,Dua Lipa,Doja Cat,Frida Kahlo,Frank Sinatra,Greta Thunberg,Hannibal,Harry Houdini,Malala Yousafzai,Nostradamus,Pythagoras,Rosa Parks,Sigmund Freud,Tutankhamun,Copernicus,Johannes Kepler,Edmund Hillary,Ernest Shackleton,Marco Polo,Christopher Columbus,Ferdinand Magellan,Vasco da Gama,Matthew Flinders,Ash Barty,Patrick Mahomes,Travis Kelce,Max Verstappen,Lewis Hamilton,Ayrton Senna,Daniel Ricciardo,Oscar Piastri,Sam Kerr,Ian Thorpe,Shane Warne,Pat Cummins,Virat Kohli,Sachin Tendulkar,Quokka,Quail,Quartz,Quinoa,Quesadilla,Quill,Quiche,Xbox,X-ray,Xerox,Yeti,Yacht,Yam,Zucchini,Zeppelin,Zipper,Kayak,Koi,Kookaburra,Kebab,Ketchup,Kettle,Kite,Jellybean,Jet ski,Jigsaw,Jukebox,Iguana,Impala,Ukulele,Sea urchin,Vulture,Velociraptor,Volleyball,Walrus,Waffle,Wasabi,Nachos,Nutella,Octagon,Origami,Ostrich,Otter,Echidna,Emerald,Escalator,Anaconda,Armadillo,Avalanche,Boomerang,Didgeridoo,Drop bear,Dingo,Tim Tam,Meat pie,Sausage roll,Fairy bread,Hills Hoist,Ugg boots,Flamingo,Gecko,Hedgehog,Hummingbird,Lobster,Mammoth,Meerkat,Mongoose,Pelican,Piranha,Raccoon,Scorpion,Sloth,Squid,Stingray,Tarantula,Toucan,Tyrannosaurus,Triceratops,Stegosaurus,Brontosaurus,Pterodactyl,Cappuccino,Croissant,Dumpling,Falafel,Guacamole,Hummus,Lasagne,Macaron,Omelette,Paella,Pretzel,Ramen,Risotto,Samosa,Tiramisu,Tofu,Saxophone,Harmonica,Accordion,Trombone,Banjo,Cello,Flute,Harp,Oboe,Tuba,Telescope,Microscope,Compass,Calculator,Stapler,Trampoline,Skateboard,Surfboard,Snowboard,Hovercraft,Blimp,Monorail,Tram,Ferry,Galleon,Canoe,Gondola,Satellite,International Space Station,Hubble,Atom,Electron,Neutron,Photon,Uranium,Plutonium,Zinc,Xenon,Krypton,Neon,Helium,Carbon,Titanium,Kryptonite,Excalibur,Mount Olympus,Atlantis,Narnia,Hogwarts,Gotham,Wakanda,Zelda,Kirby,Yoshi,Pikachu,Sonic,Pac-Man,Tetris,Among Us,Overwatch,Valorant,Zoom,Battle of Hastings,Boston Tea Party,Magna Carta,Apollo 11,Chernobyl,Pompeii,Watergate,Woodstock,Live Aid,First Fleet,Hundred Years War,Wars of the Roses,Trojan War,Russian Revolution,American Revolution,Cuban Missile Crisis,Space Race,Great Fire of London,Hindenburg,Spanish Flu,D-Day,Pearl Harbor,Battle of Waterloo,Kokoda Track,Arab Spring,Glastonbury,Burning Man,Coachella,Oktoberfest,Diwali,Hanukkah,Ramadan,Lunar New Year,Mardi Gras,Holi,Thanksgiving,The Ashes,State of Origin,Stanley Cup,Ryder Cup,Davis Cup,Commonwealth Games,Paralympics`,
+5:`Ayers Rock,Kata Tjuta,Bungle Bungles,Wave Rock,Twelve Apostles,Lake Hillier,Zhangjiajie,Xochimilco,Xanadu,Xiamen,Xalapa,Xian,Qinghai,Qom,Quetzalcoatl,Qin Shi Huang,Quasimodo,Quetzal,Quoll,Quagga,Zanzibar,Zermatt,Yggdrasil,Ypres,Yorkshire Pudding,Yuzu,Ytterbium,Yttrium,Xerxes,Xylem,Xenophon,Zeno,Zoroaster,Zugspitze,Zheng He,Kamchatka,Wassily Kandinsky,Kierkegaard,Franz Kafka,Kublai Khan,Krakatoa,Jotunheimen,Ishtar Gate,Ivan the Terrible,Imhotep,Ibn Battuta,Ulysses,Uxmal,Ushuaia,Ural Mountains,Utopia,Mount Vesuvius,Vercingetorix,Vlad the Impaler,Valhalla,Vindaloo,Oaxaca,Okavango Delta,Oymyakon,Ozymandias,Olmec,Nazca Lines,Neuschwanstein,Nefertiti,Mohenjo-daro,Mansa Musa,Lalibela,Lascaux,Luxor,Hatshepsut,Hagia Sophia,Halong Bay,Gobekli Tepe,Great Zimbabwe,Fibonacci,Fermat,Euclid,Eratosthenes,Darjeeling,Dunedin,Coober Pedy,Cradle Mountain,Borobudur,Aurora Australis,Alhambra,Antikythera Mechanism,Aksum,Agra,Assam,Tsar Bomba,Tunguska Event,Taiping Rebellion,Abel Tasman,Sputnik,Silk Road,Sargasso Sea,Rosetta Stone,Rapa Nui,Pangaea,Peloponnesian War,Mount Tambora,Thylacine,Tardigrade,Pangolin,Okapi,Narwhal,Axolotl,Blobfish,Kakapo,Cassowary,Dugong,Numbat,Bilby,Yowie,Bunyip,Kraken,Basilisk,Jabberwocky,Juggernaut,Xenomorph,Ziggurat,Zither,Zamboni,Kaleidoscope,Kazoo,Kumquat,Kohlrabi,Jicama,Ugli fruit,Ube,Rambutan,Durian,Lychee,Dragon fruit,Jackfruit,Persimmon,Quandong,Wattleseed,Eureka Stockade,Rum Rebellion,Snowy Hydro,The Dismissal,Wave Hill Walk-Off,Sydney Harbour Bridge,Big Banana,Big Pineapple,Phar Lap,Dawn Fraser,Jorn Utzon,Ernest Rutherford,Oodnadatta,Wagga Wagga,Woolloomooloo,Kalgoorlie,Uluru-Kata Tjuta,Iqaluit,Inuvik,Ingolstadt,Isfahan,Ijen,Jodhpur,Jaipur,Joshua Tree,Yucatan,Yamal,Yazd,Zaragoza,Zinder,Quarantine Station,Quebec City,Ouagadougou,Ulm,Vientiane,Valparaiso,Wuhan,Yokozuna,Zorro,Zeus,Odin,Osiris,Anubis,Kali,Yoda,Ewok,Gandalf,Frodo,Gollum,Sherlock Holmes,Dracula,Frankenstein,Moby Dick,Ulysses Grant`
+};
+const ALIAS={usa:'United States',us:'United States',america:'United States',unitedstatesofamerica:'United States',uk:'United Kingdom',britain:'United Kingdom',greatbritain:'United Kingdom',nz:'New Zealand',uae:'United Arab Emirates',nyc:'New York',la:'Los Angeles',shakespeare:'William Shakespeare',einstein:'Albert Einstein',newton:'Isaac Newton',gandhi:'Mahatma Gandhi',mandela:'Nelson Mandela',picasso:'Pablo Picasso',vangogh:'Vincent van Gogh',beethoven:'Ludwig van Beethoven',messi:'Lionel Messi',ronaldo:'Cristiano Ronaldo',obama:'Barack Obama',trump:'Donald Trump',lincoln:'Abraham Lincoln',churchill:'Winston Churchill',edison:'Thomas Edison',curie:'Marie Curie',columbus:'Christopher Columbus',kafka:'Franz Kafka',jfk:'John F Kennedy',mlk:'Martin Luther King',martinlutherkingjr:'Martin Luther King',lebron:'LeBron James',hippo:'Hippopotamus',rhino:'Rhinoceros',trex:'Tyrannosaurus',tyrannosaurusrex:'Tyrannosaurus',ww:'World War II',wwii:'World War II',secondworldwar:'World War II',wwi:'World War I',firstworldwar:'World War I',operahouse:'Sydney Opera House',greatwall:'Great Wall of China',eiffel:'Eiffel Tower',kgari:'Fraser Island',everest:'Mount Everest',fuji:'Mount Fuji',vesuvius:'Mount Vesuvius',kosciuszko:'Mount Kosciuszko',yogurt:'Yoghurt',harbourbridge:'Sydney Harbour Bridge',captaincook:'James Cook',bradman:'Don Bradman',kandinsky:'Wassily Kandinsky',houdini:'Harry Houdini',beyonceknowles:'Beyonce',mcdonald:'McDonalds',cocacola:'Coca Cola',coke:'Coca Cola',spiderman:'Spider-Man',iss:'International Space Station',apollo:'Apollo 11',kiwifruit:'Kiwi',hamburger:'Burger',tv:'Television',xray:'X-ray'};
+
+const CATLIST={c:`Afghanistan|Albania|Algeria|Argentina|Australia|Austria|Bangladesh|Belgium|Brazil|Bulgaria|Cambodia|Canada|Chile|China|Colombia|Croatia|Cuba|Denmark|Egypt|England|Ethiopia|Fiji|Finland|France|Germany|Ghana|Greece|Hungary|Iceland|India|Indonesia|Iran|Iraq|Ireland|Israel|Italy|Jamaica|Japan|Kenya|Malaysia|Mexico|Morocco|Nepal|Netherlands|New Zealand|Nigeria|North Korea|Norway|Pakistan|Peru|Philippines|Poland|Portugal|Russia|Saudi Arabia|Scotland|Singapore|South Africa|South Korea|Spain|Sweden|Switzerland|Thailand|Turkey|Ukraine|United Kingdom|United States|Vietnam|Wales|Zimbabwe|Qatar|Yemen|United Arab Emirates|Uruguay|Venezuela|Uganda|Oman|Kuwait|Laos|Mongolia|Ecuador|Estonia|Latvia|Lithuania|Luxembourg|Malta|Monaco|Jordan|Lebanon|Syria|Sri Lanka|Tanzania|Zambia|Bolivia|Paraguay|Panama|Haiti|Cyprus|Serbia|Romania|Slovakia|Slovenia|Belarus|Georgia|Armenia|Azerbaijan|Kazakhstan|Uzbekistan|Somalia|Sudan|Libya|Tunisia|Senegal|Mali|Niger|Rwanda|Angola|Namibia|Botswana|Madagascar|Mozambique|Cameroon|Nicaragua|Honduras|Guatemala|Costa Rica|El Salvador|Bahamas|Barbados|Bhutan|Brunei|Myanmar|Taiwan|Samoa|Tonga|Vanuatu|Papua New Guinea|Vatican City|Kosovo|Montenegro|Moldova|Liechtenstein|San Marino|Andorra|Eritrea|Djibouti|Gabon|Togo|Benin|Burundi|Malawi|Lesotho|Eswatini|Comoros|Seychelles|Mauritius|Maldives|Kiribati|Tuvalu|Nauru|Palau|Micronesia|Kyrgyzstan|Tajikistan|Turkmenistan|Timor-Leste`,t:`London|Paris|Tokyo|New York|Sydney|Melbourne|Rome|Berlin|Dubai|Los Angeles|Moscow|Beijing|Brisbane|Perth|Adelaide|Madrid|Athens|Toronto|Chicago|Barcelona|Amsterdam|Auckland|Bangkok|Cairo|Dublin|Edinburgh|Florence|Geneva|Hanoi|Istanbul|Jakarta|Kathmandu|Lisbon|Manila|Nairobi|Oslo|Prague|Quebec|Rio de Janeiro|Seoul|Tehran|Vienna|Warsaw|Yokohama|Zurich|Venice|Hobart|Darwin|Canberra|Cairns|Gold Coast|Quito|Queenstown|Quezon City|Zagreb|Yerevan|Kabul|Kyoto|Kyiv|Krakow|Kolkata|Karachi|Jerusalem|Johannesburg|Juneau|Ottawa|Osaka|Orlando|Oxford|Inverness|Ulaanbaatar|Utrecht|Valencia|Vancouver|Verona|Vladivostok|Wellington|Winnipeg|Wollongong|Alice Springs|Byron Bay|Ballarat|Bendigo|Geelong|Toowoomba|Townsville|Newcastle|Fremantle|Petra|Hollywood|Las Vegas|Mumbai|Delhi|Shanghai|Hong Kong|Kuala Lumpur|Marrakech|Casablanca|Cape Town|Lagos|Accra|Addis Ababa|Havana|Lima|Bogota|Santiago|Buenos Aires|Sao Paulo|Montevideo|Caracas|Reykjavik|Helsinki|Stockholm|Copenhagen|Budapest|Bucharest|Sofia|Belgrade|Chernobyl|Pompeii|Xiamen|Xalapa|Xian|Qom|Zermatt|Ypres|Ushuaia|Oaxaca|Oymyakon|Mohenjo-daro|Lalibela|Luxor|Darjeeling|Dunedin|Coober Pedy|Aksum|Agra|Oodnadatta|Wagga Wagga|Woolloomooloo|Kalgoorlie|Iqaluit|Inuvik|Ingolstadt|Isfahan|Jodhpur|Jaipur|Yazd|Zaragoza|Zinder|Quebec City|Ouagadougou|Ulm|Vientiane|Valparaiso|Wuhan`,p:`Taylor Swift|Elon Musk|Albert Einstein|Michael Jackson|Donald Trump|Barack Obama|Cristiano Ronaldo|Lionel Messi|Isaac Newton|Mozart|Beyonce|William Shakespeare|Napoleon|Abraham Lincoln|Queen Elizabeth|Victoria|Jordan|Adele|Ariana Grande|Billie Eilish|Bruno Mars|Drake|Ed Sheeran|Eminem|Harry Styles|Justin Bieber|Kanye West|Lady Gaga|Rihanna|Shakira|Snoop Dogg|Usher|Zendaya|Oprah Winfrey|Bill Gates|Steve Jobs|Mark Zuckerberg|Jeff Bezos|Nelson Mandela|Martin Luther King|Mahatma Gandhi|Winston Churchill|Julius Caesar|Cleopatra|Leonardo da Vinci|Pablo Picasso|Vincent van Gogh|Charles Darwin|Marie Curie|Nikola Tesla|Thomas Edison|Stephen Hawking|Galileo|Aristotle|Plato|Socrates|Usain Bolt|Serena Williams|Roger Federer|Novak Djokovic|LeBron James|Michael Jordan|Kobe Bryant|Tiger Woods|Muhammad Ali|Neymar|Kylian Mbappe|Erling Haaland|Don Bradman|Steve Irwin|Hugh Jackman|Chris Hemsworth|Margot Robbie|Kylie Minogue|Keanu Reeves|Tom Cruise|Tom Holland|Will Smith|Dwayne Johnson|Leonardo DiCaprio|Johnny Depp|Emma Watson|Daniel Radcliffe|Walt Disney|Charlie Chaplin|Elvis Presley|John Lennon|Freddie Mercury|Bob Marley|Queen Victoria|Henry VIII|King Charles|Prince Harry|Kim Kardashian|MrBeast|PewDiePie|Xi Jinping|Vladimir Putin|Joe Biden|Anthony Albanese|Kamala Harris|Ronald Reagan|John F Kennedy|George Washington|Genghis Khan|Alexander the Great|Joan of Arc|Mother Teresa|Anne Frank|Neil Armstrong|Yuri Gagarin|Amelia Earhart|James Cook|Ned Kelly|Tesla|Quentin Tarantino|Queen Latifah|Zinedine Zidane|Zac Efron|Zlatan Ibrahimovic|Yoko Ono|Kevin Hart|Kendrick Lamar|Katy Perry|Kurt Cobain|Karl Marx|Jane Austen|Jimi Hendrix|JK Rowling|Jacinda Ardern|Uma Thurman|Ozzy Osbourne|Olivia Rodrigo|Oscar Wilde|Orville Wright|Ada Lovelace|Alan Turing|Agatha Christie|Archimedes|Ludwig van Beethoven|Bach|Banksy|Cathy Freeman|Dua Lipa|Doja Cat|Frida Kahlo|Frank Sinatra|Greta Thunberg|Hannibal|Harry Houdini|Malala Yousafzai|Nostradamus|Pythagoras|Rosa Parks|Sigmund Freud|Tutankhamun|Copernicus|Johannes Kepler|Edmund Hillary|Ernest Shackleton|Marco Polo|Christopher Columbus|Ferdinand Magellan|Vasco da Gama|Matthew Flinders|Ash Barty|Patrick Mahomes|Travis Kelce|Max Verstappen|Lewis Hamilton|Ayrton Senna|Daniel Ricciardo|Oscar Piastri|Sam Kerr|Ian Thorpe|Shane Warne|Pat Cummins|Virat Kohli|Sachin Tendulkar|Qin Shi Huang|Xerxes|Xenophon|Zeno|Zoroaster|Zheng He|Wassily Kandinsky|Kierkegaard|Franz Kafka|Kublai Khan|Ivan the Terrible|Imhotep|Ibn Battuta|Vercingetorix|Vlad the Impaler|Nefertiti|Mansa Musa|Hatshepsut|Fibonacci|Fermat|Euclid|Eratosthenes|Abel Tasman|Phar Lap|Dawn Fraser|Jorn Utzon|Ernest Rutherford|Ulysses Grant`,a:`Elephant|Tiger|Lion|Dog|Cat|Eagle|Kangaroo|Koala|Zebra|Giraffe|Ant|Octopus|Dolphin|Shark|Snake|Rabbit|Horse|Penguin|Owl|Parrot|Platypus|Wombat|Emu|Crocodile|Hippopotamus|Rhinoceros|Gorilla|Monkey|Panda|Bear|Wolf|Fox|Deer|Moose|Camel|Llama|Alpaca|Yak|Jaguar|Leopard|Cheetah|Whale|Jellyfish|Starfish|Turtle|Frog|Butterfly|Bee|Spider|Mosquito|Quokka|Quail|Koi|Kookaburra|Iguana|Impala|Sea urchin|Vulture|Velociraptor|Walrus|Ostrich|Otter|Echidna|Anaconda|Armadillo|Dingo|Flamingo|Gecko|Hedgehog|Hummingbird|Lobster|Mammoth|Meerkat|Mongoose|Pelican|Piranha|Raccoon|Scorpion|Sloth|Squid|Stingray|Tarantula|Toucan|Tyrannosaurus|Triceratops|Stegosaurus|Brontosaurus|Pterodactyl|Quetzal|Quoll|Quagga|Thylacine|Tardigrade|Pangolin|Okapi|Narwhal|Axolotl|Blobfish|Kakapo|Cassowary|Dugong|Numbat|Bilby|Phar Lap|Yokozuna`,f:`Apple|Banana|Orange|Pizza|Chocolate|Egg|Ice cream|Avocado|Broccoli|Carrot|Mango|Pineapple|Strawberry|Watermelon|Kiwi|Lemon|Grape|Cherry|Peach|Potato|Tomato|Onion|Pasta|Sushi|Taco|Burger|Hot dog|Pancake|Vegemite|Pavlova|Lamington|Spaghetti|Noodle|Bread|Cheese|Yoghurt|Coca Cola|Quinoa|Quesadilla|Quiche|Yam|Zucchini|Kebab|Ketchup|Jellybean|Waffle|Wasabi|Nachos|Nutella|Tim Tam|Meat pie|Sausage roll|Fairy bread|Cappuccino|Croissant|Dumpling|Falafel|Guacamole|Hummus|Lasagne|Macaron|Omelette|Paella|Pretzel|Ramen|Risotto|Samosa|Tiramisu|Tofu|Yorkshire Pudding|Yuzu|Vindaloo|Kumquat|Kohlrabi|Jicama|Ugli fruit|Ube|Rambutan|Durian|Lychee|Dragon fruit|Jackfruit|Persimmon|Quandong|Wattleseed`,e:`Olympics|World War II|Titanic|Christmas|Easter|Halloween|Moon Landing|Black Death|Cold War|French Revolution|Gold Rush|Great Depression|Industrial Revolution|Renaissance|Ice Age|World War I|Fall of the Berlin Wall|Big Bang|Brexit|Super Bowl|World Cup|Wimbledon|Melbourne Cup|Tour de France|Eurovision|Gallipoli|Anzac Day|Australia Day|Battle of Hastings|Boston Tea Party|Magna Carta|Apollo 11|Chernobyl|Watergate|Woodstock|Live Aid|First Fleet|Hundred Years War|Wars of the Roses|Trojan War|Russian Revolution|American Revolution|Cuban Missile Crisis|Space Race|Great Fire of London|Hindenburg|Spanish Flu|D-Day|Pearl Harbor|Battle of Waterloo|Arab Spring|Glastonbury|Burning Man|Coachella|Oktoberfest|Diwali|Hanukkah|Ramadan|Lunar New Year|Mardi Gras|Holi|Thanksgiving|The Ashes|State of Origin|Stanley Cup|Ryder Cup|Davis Cup|Commonwealth Games|Paralympics|Krakatoa|Tsar Bomba|Tunguska Event|Taiping Rebellion|Sputnik|Peloponnesian War|Mount Tambora|Eureka Stockade|Rum Rebellion|The Dismissal|Wave Hill Walk-Off`,l:`Eiffel Tower|Mount Everest|Amazon|Texas|California|Florida|Hawaii|Alaska|Tasmania|Queensland|Victoria|Georgia|Greenland|Antarctica|Africa|Asia|Europe|Sahara|Nile|Thames|Danube|Mississippi|Uluru|Grand Canyon|Niagara Falls|Great Barrier Reef|Stonehenge|Colosseum|Taj Mahal|Big Ben|Statue of Liberty|Sydney Opera House|Kilimanjaro|Alps|Himalayas|Andes|Gallipoli|Xinjiang|Zambezi|Zion National Park|Yangtze|Yellowstone|Yosemite|Yukon|Ibiza|Iguazu Falls|Utah|Vatican City|Kakadu|Kimberley|Nullarbor|Snowy Mountains|Murray River|Mount Kosciuszko|Bondi Beach|Rottnest Island|Fraser Island|Lake Eyre|Dead Sea|Death Valley|Lake Titicaca|Mount Fuji|Machu Picchu|Petra|Angkor Wat|Chichen Itza|Easter Island|Galapagos|Great Wall of China|Hollywood|Bali|Phuket|Mount Olympus|Pompeii|Kokoda Track|Ayers Rock|Kata Tjuta|Bungle Bungles|Wave Rock|Twelve Apostles|Lake Hillier|Zhangjiajie|Xochimilco|Xanadu|Qinghai|Zanzibar|Zugspitze|Kamchatka|Krakatoa|Jotunheimen|Ishtar Gate|Uxmal|Ural Mountains|Mount Vesuvius|Okavango Delta|Nazca Lines|Neuschwanstein|Lascaux|Hagia Sophia|Halong Bay|Gobekli Tepe|Great Zimbabwe|Cradle Mountain|Borobudur|Alhambra|Assam|Silk Road|Sargasso Sea|Rapa Nui|Mount Tambora|Snowy Hydro|Sydney Harbour Bridge|Big Banana|Big Pineapple|Uluru-Kata Tjuta|Ijen|Joshua Tree|Yucatan|Yamal|Quarantine Station`,b:`iPhone|Amazon|Google|Olympics|Minecraft|Fortnite|Roblox|Pokemon|Mario|Lego|Barbie|Netflix|YouTube|TikTok|Instagram|Facebook|Microsoft|Tesla|Nike|Adidas|Samsung|Toyota|Ferrari|Lamborghini|McDonalds|Coca Cola|Starbucks|Harry Potter|Star Wars|Shrek|Frozen|Toy Story|The Simpsons|Bluey|Xbox|Xerox|Hills Hoist|Ugg boots|Narnia|Zelda|Kirby|Sonic|Pac-Man|Tetris|Among Us|Overwatch|Valorant|Zoom|Zamboni|Dracula|Frankenstein|Moby Dick`,h:`Unicorn|Dragon|Vampire|Ninja|Pirate|Wizard|Zombie|Mario|Harry Potter|Spider-Man|Batman|Superman|Iron Man|Hulk|Thor|Shrek|Bluey|Hannibal|Yeti|Drop bear|Zelda|Kirby|Yoshi|Pikachu|Sonic|Pac-Man|Quetzalcoatl|Quasimodo|Ulysses|Ozymandias|Yowie|Bunyip|Kraken|Basilisk|Jabberwocky|Juggernaut|Xenomorph|Zorro|Zeus|Odin|Osiris|Anubis|Kali|Yoda|Ewok|Gandalf|Frodo|Gollum|Sherlock Holmes|Dracula|Frankenstein|Moby Dick`,x:`Television|Computer|Titanic|Sun|Moon|Earth|Mars|Ocean|Umbrella|Xylophone|Yoyo|Bicycle|Car|Train|Rocket|Helicopter|Submarine|Guitar|Piano|Violin|Drum|Trumpet|Clock|Lamp|Chair|Table|Pencil|Notebook|Keyboard|Robot|Diamond|Gold|Silver|Iron|Oxygen|Hydrogen|Volcano|Tornado|Rainbow|Lightning|Igloo|Pyramid|Castle|Bridge|Jupiter|Saturn|Venus|Mercury|Neptune|Uranus|Pluto|Galaxy|Comet|Asteroid|Black hole|Internet|Bitcoin|Euro|Dollar|Yen|Quiz|Quartz|Quill|X-ray|Yacht|Zeppelin|Zipper|Kayak|Kettle|Kite|Jet ski|Jigsaw|Jukebox|Ukulele|Volleyball|Octagon|Origami|Emerald|Escalator|Avalanche|Boomerang|Didgeridoo|Saxophone|Harmonica|Accordion|Trombone|Banjo|Cello|Flute|Harp|Oboe|Tuba|Telescope|Microscope|Compass|Calculator|Stapler|Trampoline|Skateboard|Surfboard|Snowboard|Hovercraft|Blimp|Monorail|Tram|Ferry|Galleon|Canoe|Gondola|Satellite|International Space Station|Hubble|Atom|Electron|Neutron|Photon|Uranium|Plutonium|Zinc|Xenon|Krypton|Neon|Helium|Carbon|Titanium|Kryptonite|Excalibur|Atlantis|Hogwarts|Gotham|Wakanda|Yggdrasil|Ytterbium|Yttrium|Xylem|Utopia|Valhalla|Olmec|Aurora Australis|Antikythera Mechanism|Rosetta Stone|Pangaea|Ziggurat|Zither|Kaleidoscope|Kazoo`};
+const norm=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/&/g,'and').trim().replace(/^the\s+/,'').replace(/[^a-z]/g,'');
+const DICT=new Map(), BY={};
+for(const t of [1,2,3,5]) for(const raw of RAW[t].split(',')){const name=raw.trim(),k=norm(name);if(!k||DICT.has(k))continue;DICT.set(k,{name,pts:t,k});(BY[k[0]]=BY[k[0]]||[]).push(k);}
+const lookup=s=>{const k=norm(s);return DICT.get(k)||(ALIAS[k]?DICT.get(norm(ALIAS[k])):null)};
+let TOTAL=DICT.size;
+/* categories: each answer can belong to one or more */
+const CATS={c:['A country','country'],t:['A city or town','city'],l:['A place (landmark, river, mountain or region)','place'],p:['A famous person','famous person'],n:['A first name','first name'],a:['An animal','animal'],f:['A food or drink','food'],e:['An event or celebration','event'],b:['A brand, game, film or show','brand or show'],h:['A fictional character or creature','character'],x:['An object or thing','thing']};
+for(const [c,list] of Object.entries(CATLIST)) for(const n of list.split('|')){const e=DICT.get(norm(n));if(e)(e.cats=e.cats||new Set()).add(c);}
+/* big answer list (answers.js): ~240,000 real names from Pantheon, world cities, WordNet, Natural Earth and name lists */
+const BIGD=window.DC_BIG||{big:{},alias:{}};
+for(const [c,tiers] of Object.entries(BIGD.big)) for(const [t,list] of Object.entries(tiers)){if(!list)continue;const pts=+t;
+  for(const name of list.split('|')){const k=norm(name);if(!k)continue;let e=DICT.get(k);
+    if(!e){e={name,pts,k,big:true};DICT.set(k,e);(BY[k[0]]=BY[k[0]]||[]).push(k)}else if(e.big&&pts<e.pts)e.pts=pts;
+    (e.cats=e.cats||new Set()).add(c)}}
+for(const [k,v] of Object.entries(BIGD.alias)) if(!(k in ALIAS)&&DICT.has(norm(v))) ALIAS[k]=v;
+TOTAL=DICT.size;
+for(const e of DICT.values()) if(!e.cats) e.cats=new Set(['x']);
+const inCat=(k,c)=>{if(!c)return true;const e=DICT.get(k);return !!e&&e.cats.has(c)};
+const CNT={};
+const countFor=(letter,c,used)=>{const id=letter+(c||'');if(!(id in CNT))CNT[id]=(BY[letter]||[]).filter(k=>inCat(k,c)).length;
+  let n=CNT[id];if(used)for(const k of used)if(k[0]===letter&&inCat(k,c))n--;return n};
+const catWord=c=>CATS[c][1];const an=w=>(/^[aeiou]/i.test(w)?'an ':'a ')+w;
+const SHORT={b:'brand',h:'fiction'};const catShort=c=>SHORT[c]||CATS[c][1];
+const lc=s=>s[0].toLowerCase()+s.slice(1);
+const ask=(c,l)=>`${CATS[c][0]} starting with ${L(l)}`;
+/* Real-world share of answers by first letter is far more lopsided than this list; use a fixed trap set */
+const TRAPS=new Set(['q','x','z','y','j','u','v','o','i']);
+const REALSHARE={q:0.4,x:0.2,z:0.6,y:0.7,j:1.4,u:1.1,v:1.6,o:1.5,i:1.8};
+const L=c=>c.toUpperCase();
+
+const hash=s=>{let h=2166136261;for(const ch of String(s)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
+const rng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const pct=(k,p)=>{const r=(hash(k)%1000)/1000;return p===1?12+r*26:p===2?4+r*7:p===3?1+r*2.9:p===5?0.1+r*0.8:0};
+const fmtPct=v=>v<1?v.toFixed(1)+'%':Math.round(v)+'%';
+const plausible=k=>k.length>=3&&k.length<=40&&/[aeiouy]/.test(k)&&!/(.)\1\1/.test(k)&&!/[^aeiouy]{6}/.test(k);
+const titleCase=s=>s.trim().replace(/\s+/g,' ').replace(/\b([a-z])/g,m=>m.toUpperCase());
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem('dc-'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dc-'+k,JSON.stringify(v))}catch(e){}}};
+const $=id=>document.getElementById(id);
+
+/* autocorrect: closest known answer within 1 typo (2 for long names), allowing swapped letters */
+const FUZZ={};for(const key of [...DICT.keys(),...Object.keys(ALIAS)])(FUZZ[key[0]]=FUZZ[key[0]]||[]).push(key);
+const resolve=key=>DICT.get(key)||DICT.get(norm(ALIAS[key]));
+function dist(a,b,max){const m=a.length,n=b.length;if(Math.abs(m-n)>max)return max+1;let p2=[],p=[...Array(n+1).keys()];
+  for(let i=1;i<=m;i++){const c=[i];let lo=i;for(let j=1;j<=n;j++){let v=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])v=Math.min(v,p2[j-2]+1);c[j]=v;if(v<lo)lo=v}
+    if(lo>max)return max+1;p2=p;p=c}return p[n]}
+function fuzzy(k,req,cat,onlyCat){const max=k.length>=8?2:k.length>=4?1:0;if(!max)return null;let best=null,bs=9;
+  for(const key of FUZZ[req]||[]){if(Math.abs(key.length-k.length)>max)continue;const d=dist(k,key,max);if(d>max)continue;const e=resolve(key);if(!e)continue;
+    const off=cat&&!e.cats.has(cat);if(off&&onlyCat)continue;
+    const sc=d+(off?1.5:0)+(key[0]!==k[0]?.3:0)+e.pts*.02;if(sc<bs){bs=sc;best=e}}
+  return best}
+/* check an answer against the required letter, category and used set */
+let SUGG='';
+function check(text,req,used,cat){
+  let k=norm(text);
+  if(!k) return {ok:false,msg:'Type a name first.'};
+  let e=lookup(text),fixed=false;
+  /* same spelling, different thing: "Lincoln" is a city, but for a famous person use Abraham Lincoln */
+  if(e&&cat&&!e.cats.has(cat)){const a=ALIAS[k]&&DICT.get(norm(ALIAS[k]));if(a&&a.cats.has(cat))e=a}
+  /* real word in the wrong category: offer a close match that fits the prompt */
+  if(e&&cat&&!e.cats.has(cat)&&k[0]===req){const f=fuzzy(k,req,cat,true);if(f){if(SUGG!==k){SUGG=k;return{ok:false,suggest:f.name,msg:''}}e=f;fixed=true;k=f.k}}
+  if(!e){const f=fuzzy(k,req,cat);if(f){if(SUGG!==k){SUGG=k;return{ok:false,suggest:f.name,msg:''}}e=f;fixed=true;k=f.k}}
+  if(k[0]!==req) return {ok:false,msg:`That starts with ${L(k[0])}. You need ${L(req)}.`};
+  const ck=e?e.k:k;
+  if(used.has(ck)) return {ok:false,msg:`${e?e.name:titleCase(text)} is already in this chain.`};
+  if(e&&cat&&!e.cats.has(cat)) return {ok:false,msg:`${e.name} counts as ${an(catWord([...e.cats][0]))}. This link needs ${an(catWord(cat))}.`};
+  const shown=e&&(fixed||norm(e.name)===k)?e.name:titleCase(text);
+  const last=k.slice(-1);
+  if(e) return {ok:true,name:shown,key:ck,pts:e.pts,last,pct:pct(ck,e.pts),cat,fixed};
+  if(plausible(k)) return {ok:true,unverified:true,name:titleCase(text),key:k,pts:1,last,pct:0,cat,fixed:false};
+  return {ok:false,msg:"That doesn't look like a real name. Try another."};
+}
+
+/* backup referee: answers missing from the list are looked up on Wikidata by the site's /api/check (each name once, then cached) */
+async function referee(r,text){
+  try{
+    const res=await fetch(`/api/check?q=${encodeURIComponent(text.trim())}&cat=${r.cat||'x'}`);
+    if(!res.ok)throw 0;
+    const v=await res.json();
+    if(v.ok){if(v.name&&norm(v.name)===r.key)r.name=v.name;r.pts=v.pts;r.pct=pct(r.key,v.pts);r.unverified=false;r.wiki=true;return r}
+    if(v.reason==='wrongcat')return{ok:false,msg:`${v.name||r.name} doesn't count as ${an(catWord(r.cat))}. Try another.`};
+    return{ok:false,msg:`Couldn't find “${r.name}”. Check the spelling or try another.`};
+  }catch(e){return{ok:false,msg:`Couldn't check “${r.name}” right now. Try another.`}}  /* strict: only real answers count */
+}
+
+/* ---------- sound: a short metal clink, a snap at time up ---------- */
+let AC=null,soundOn=store.get('sound',true);
+const sndBtn=$('snd');
+const setSnd=()=>{sndBtn.setAttribute('aria-pressed',soundOn);sndBtn.setAttribute('aria-label',soundOn?'Sound on':'Sound off')};setSnd();
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,t0,dur,vol,type='sine'){const a=ac();if(!a)return;const t=a.currentTime+t0,o=a.createOscillator(),g=a.createGain();
+  o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.05)}
+/* timed to land with the ring's clink animation */
+function clink(pts,at=.3){if(!soundOn)return;const b=1300+(pts||1)*120;tone(b,at,.22,.1,'triangle');tone(b*2.4,at,.1,.035);tone(b*.5,at,.12,.06,'square')}
+function snapSnd(){if(!soundOn)return;const a=ac();if(!a)return;const n=Math.floor(a.sampleRate*.22),buf=a.createBuffer(1,n,a.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);const s=a.createBufferSource(),g=a.createGain();g.gain.value=.22;s.buffer=buf;s.connect(g).connect(a.destination);s.start();
+  tone(300,0,.35,.09,'triangle');tone(170,.06,.5,.07,'triangle')}
+function medalSnd(){if(!soundOn)return;[784,988,1319].forEach((f,i)=>tone(f,i*.09,.45,.07,'triangle'))}
+sndBtn.onclick=()=>{soundOn=!soundOn;store.set('sound',soundOn);setSnd();if(soundOn)clink(1)};
+const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+
+/* ---------- chain links ---------- */
+/* each answer shows its middle letters; the joining letter is one shared tile */
+let lastEd=0;
+function linkHTML(a,i,fresh){
+  const s=a.name.replace(/^the\s+/i,'');let f=-1,l=-1;
+  for(let n=0;n<s.length;n++){if(norm(s[n])){if(f<0)f=n;l=n}}
+  const mid=l>f?s.slice(f+1,l).toUpperCase():'',first=norm(s[f]||'')||'?',last=norm(s[l]||'')||'?';
+  const chars=[...mid].map((c,n)=>`<i style="--d:${n};--r:${(n%2?1:-1)*(25+(n*17)%45)}deg">${esc(c)}</i>`).join('');
+  lastEd=fresh?mid.length*32+140:0;
+  const pts=a.showPts===false||a.pts==null?'':(a.unverified?'?':'+'+a.pts);
+  const label=[a.cat?catShort(a.cat):'',pts].filter(Boolean).join(' · ');
+  const cls=`lk r${a.unverified?0:(a.pts||0)}${a.you?' you':''}${fresh?' new':''}${i===0?' first':''}`;
+  return `<li class="${cls}" style="--ed:${lastEd}ms"><span class="t start">${L(first)}</span><span class="w">${label?`<small>${label}</small>`:''}<b>${chars}</b></span><span class="t end" style="--d:${mid.length}">${L(last)}</span></li>`;
+}
+/* in a wrapped chain, repeat the joining letter at the start of each new row */
+function markRows(el){if(!el.classList.contains('wrapc'))return;requestAnimationFrame(()=>{let top=null;
+  for(const li of el.children){li.classList.remove('rowstart');}
+  for(const li of el.children){if(top!==null&&li.offsetTop>top+5)li.classList.add('rowstart');top=li.offsetTop}})}
+const scrollEnd=el=>{const s=el.closest('.strip');if(s)requestAnimationFrame(()=>{s.scrollLeft=s.scrollWidth})};
+const renderChain=(el,links,fresh)=>{el.innerHTML=links.map((a,i)=>linkHTML(a,i,fresh&&i===links.length-1)).join('');scrollEnd(el);markRows(el)};
+const appendLink=(el,a,i)=>{const p=el.lastElementChild&&el.lastElementChild.querySelector('.t.end');if(p){p.classList.add('pass');setTimeout(()=>p.classList.remove('pass'),400)}
+  el.insertAdjacentHTML('beforeend',linkHTML(a,i,true));scrollEnd(el)};
+function showSugg(m,inp,name){m.className='msg info';m.innerHTML=`Did you mean <button type="button" class="sugg">${esc(name)}</button>? Tap it or press Enter.`;
+  m.querySelector('button').onclick=()=>{inp.value=name;inp.form.requestSubmit()};inp.focus()}
+/* small link for the global feed, shared letters highlighted */
+function chip(a){const s=a.name;let f=-1,l=-1;for(let i=/^the\s+/i.test(s)?4:0;i<s.length;i++){if(norm(s[i])){if(f<0)f=i;l=i}}
+  let h='';for(let i=0;i<s.length;i++){const c=esc(s[i]);h+=i===f||i===l?`<u>${c}</u>`:c}return `<span class="mini">${h}</span>`}
+
+const MEDALS=[[10,'Bronze','b'],[20,'Silver','s'],[30,'Gold','g']];
+const medalFor=n=>MEDALS.filter(m=>n>=m[0]).pop();
+const topPct=n=>Math.max(1,Math.round(100/(1+Math.exp((n-8)/3.5))));
+$('legend').innerHTML=[[1,'Common · 1'],[2,'Uncommon · 2'],[3,'Rare · 3'],[5,'Very rare · 5']].map(([p,t])=>`<span><i style="border-color:var(--r${p})"></i>${t}</span>`).join('');
+$('medals').innerHTML=MEDALS.map(([n,name,c])=>`<div class="medal"><span class="disc ${c}">${n}</span><div><b>${name}</b><span>${n} links · top ${topPct(n)}%</span></div></div>`).join('');
+
+/* ---------- tabs ---------- */
+const VIEWS=['home','daily','duel','global'];
+function show(v){if(!VIEWS.includes(v))v='home';VIEWS.forEach(x=>{$('v-'+x).hidden=x!==v;const t=$('tab-'+x);if(t)t.setAttribute('aria-selected',x===v)});
+  document.querySelector('.tabs').hidden=v==='home';if(v==='global')gStart();scrollTo({top:0});}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{location.hash=b.dataset.v;show(b.dataset.v)});
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+
+/* ---------- DAILY ---------- */
+const CLOCK=90000,SWAP_COST=5000,MAXP=70;
+const now=new Date();
+const dayNum=Math.max(1,Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-Date.UTC(2026,9,28))/864e5)+1);
+const POOL='abcdefghklmnprstw';
+const DAYSEED=hash(`${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`);
+const TODAY=POOL[DAYSEED%POOL.length];
+/* today's prompts: on the real site AI writes these at midnight per step and letter; here they come from the date */
+const PROMPTS=(()=>{const r=rng(DAYSEED),order=Object.keys(CATS),out=[];
+  while(out.length<MAXP){const c=order[Math.floor(r()*order.length)];if(c!==out[out.length-1]&&c!==out[out.length-2])out.push(c)}
+  if(countFor(TODAY,out[0])<3){const i=out.findIndex(c=>countFor(TODAY,c)>=3);[out[0],out[i]]=[out[i],out[0]]}
+  return out})();
+const dateStr=now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+$('d-letter').textContent=L(TODAY);$('d-num').textContent=`No. ${dayNum} · ${now.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}`;
+$('d-date').textContent=dateStr;$('d-today').textContent=`Today's chain starts with ${L(TODAY)}`;
+
+/* demo chain on the start screen */
+const DEMO=[['Brazil','c',1],['London','t',1],['Nelson Mandela','p',1],['Ayers Rock','l',5],['Kookaburra','a',2],['Avocado','f',1],['Oslo','t',2],['Octopus','a',1],['Sherlock Holmes','h',2],['Sushi','f',1],['Iceland','c',1],['Dracula','h',3]]
+  .map(([n,c,p])=>{const e=lookup(n);return{name:e?e.name:n,pts:e?e.pts:p,cat:c}});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let demoN=3;renderChain($('demo'),DEMO.slice(0,demoN));
+function demoStep(){
+  if(!$('d-start').hidden&&!$('v-daily').hidden&&!document.hidden){
+    if(demoN<DEMO.length){appendLink($('demo'),DEMO[demoN],demoN);demoN++}
+    else{demoN=1;renderChain($('demo'),DEMO.slice(0,1))}
+  }
+  setTimeout(demoStep,demoN>=DEMO.length?2600:1500);
+}
+if(!reduce)setTimeout(demoStep,900);else renderChain($('demo'),DEMO.slice(0,6));
+
+const D={};let dTimer=null,dBusy=false;
+function dStart(){
+  ac();
+  Object.assign(D,{req:TODAY,cats:PROMPTS.slice(),used:new Set(),links:[],pts:0,swaps:0,t0:Date.now(),end:Date.now()+CLOCK,ending:false,done:false});
+  $('d-start').hidden=true;$('d-end').hidden=true;$('d-play').hidden=false;
+  $('d-chain').innerHTML='';$('d-msg').textContent='';$('d-trap').hidden=true;
+  document.querySelectorAll('.snapstamp').forEach(s=>s.remove());
+  $('d-input').disabled=false;$('d-input').value='';
+  dReq();dProgress();$('d-input').focus();
+  clearInterval(dTimer);dTimer=setInterval(dTick,100);dTick();
+  scrollTo({top:0});
+}
+function dReq(){const i=D.links.length,c=D.cats[i];
+  $('d-req').textContent=L(D.req);$('d-req').classList.toggle('trap',countFor(D.req,c,D.used)<3);
+  $('d-cat').textContent=CATS[c][0];$('d-askp').textContent=`starting with ${L(D.req)}`;
+  const a=$('d-ask');a.classList.remove('flip');void a.offsetWidth;a.classList.add('flip');
+  $('d-links').textContent=i;$('d-pts').textContent=D.pts;}
+function dProgress(){
+  const n=D.links.length,cap=30,next=MEDALS.find(m=>n<m[0]);
+  $('d-pfill').style.width=Math.min(100,n/cap*100)+'%';
+  $('d-ptrack').querySelectorAll('.notch').forEach(x=>x.remove());
+  $('d-ptrack').insertAdjacentHTML('beforeend',MEDALS.map(([t,,c])=>`<span class="notch" style="left:${t/cap*100}%"><span class="disc ${n>=t?c:'n'}">${t}</span></span>`).join(''));
+  $('d-plabel').textContent=next?`${next[1]} at ${next[0]} links`:'Gold! Keep the chain going';
+  $('d-plabel2').textContent=next?`${n} / ${next[0]}`:`${n} links`;
+}
+function medalPop(m){const el=document.createElement('div');el.className='medalpop';el.innerHTML=`<span class="disc ${m[2]}">${m[0]}</span><b>${m[1]}</b>`;document.body.appendChild(el);setTimeout(()=>el.remove(),2300);medalSnd();buzz([20,40,20])}
+function dTick(){if(D.ending)return;const left=Math.max(0,D.end-Date.now());$('d-time').textContent=(left/1000).toFixed(1);$('d-bari').style.width=(left/CLOCK*100)+'%';
+  const hot=left<10000;$('d-tstat').classList.toggle('hot',hot);$('d-bar').classList.toggle('hot',hot);if(!left)dSnap();}
+/* time up: the newest link snaps off, then the result */
+function dSnap(){
+  D.ending=true;clearInterval(dTimer);D.req=null;dBusy=false;$('d-input').disabled=true;$('d-time').textContent='0.0';$('d-bari').style.width='0%';
+  const last=$('d-chain').lastElementChild;if(last&&!D.done){last.classList.remove('new');last.classList.add('snapped')}
+  const st=document.createElement('div');st.className='snapstamp';st.textContent=D.done?'DONE':'TIME';$('d-chainwrap').appendChild(st);
+  $('d-chainwrap').scrollIntoView({block:'center',behavior:reduce?'auto':'smooth'});
+  snapSnd();buzz(60);setTimeout(dFinish,reduce?300:1400);
+}
+$('d-go').onclick=dStart;$('d-again').onclick=dStart;
+$('d-quit').onclick=()=>{if(D.ending)return;D.end=Date.now();dTick()};
+$('d-swap').onclick=()=>{if(!D.req||dBusy)return;const i=D.links.length,cur=D.cats[i],next=D.cats[i+1];
+  const opts=Object.keys(CATS).filter(c=>c!==cur&&c!==next&&countFor(D.req,c,D.used)>=3);
+  if(!opts.length){$('d-msg').className='msg bad';$('d-msg').textContent='No other prompt works for this letter.';return}
+  D.cats[i]=rand(opts);D.swaps++;D.end-=SWAP_COST;$('d-trap').hidden=true;
+  $('d-msg').className='msg info';$('d-msg').textContent='Swapped. That cost 5 seconds.';dReq();dTick();$('d-input').focus();};
+$('d-form').onsubmit=e=>{
+  e.preventDefault();if(dBusy||!D.req)return;const inp=$('d-input'),i=D.links.length;const r=check(inp.value,D.req,D.used,D.cats[i]);const m=$('d-msg');
+  if(!r.ok){if(r.suggest)return showSugg(m,inp,r.suggest);m.className='msg bad';m.textContent=r.msg;inp.select();buzz(30);return}
+  const accept=()=>{
+    if(D.ending||Date.now()>D.end)return;
+    D.used.add(r.key);D.links.push(r);D.pts+=r.unverified?1:r.pts;D.req=r.last;
+    m.className='msg ok';m.textContent=(r.fixed?'Autocorrected. ':'')+(r.unverified?`${r.name}: unverified, +1`:`${r.name}: ${fmtPct(r.pct)} of players said this, +${r.pts}`);
+    appendLink($('d-chain'),r,D.links.length-1);inp.value='';clink(r.unverified?1:r.pts,lastEd/1000+.12);buzz(12);
+    const n=D.links.length,md=MEDALS.find(x=>x[0]===n);if(md)medalPop(md);dProgress();
+    if(n>=MAXP){D.done=true;D.end=Date.now();return dSnap()}
+    const nc=D.cats[n],t=$('d-trap');t.hidden=countFor(r.last,nc,D.used)>=3;
+    if(!t.hidden)t.textContent=`Careful: not many ${catWord(nc)} answers start with ${L(r.last)}. You can swap the prompt for 5 seconds.`;
+    dReq();inp.focus();
+  };
+  if(r.unverified){dBusy=true;m.className='msg info';m.textContent='Checking Wikipedia…';const typed=inp.value;referee(r,typed).then(v=>{dBusy=false;if(!v.ok){m.className='msg bad';m.textContent=v.msg;if(inp.value===typed)inp.select();buzz(30);return}accept()});}
+  else accept();
+};
+function dFinish(){
+  $('d-play').hidden=true;$('d-end').hidden=false;scrollTo({top:0});
+  const n=D.links.length,start=L(TODAY),md=medalFor(n);
+  $('d-endnum').textContent=`Daily Chain No. ${dayNum} · Starts with ${start}`;
+  const disc=$('d-enddisc');disc.className='disc '+(md?md[2]:'n');disc.textContent=n;
+  $('d-endbig').textContent=md?`${md[1]} chain`:`${n} link${n===1?'':'s'}`;
+  $('d-rank').textContent=n?`Top ${topPct(n)}% today`:'No links this time';
+  const ver=D.links.filter(a=>!a.unverified),rare=ver.slice().sort((a,b)=>a.pct-b.pct)[0];
+  const nextM=MEDALS.find(x=>n<x[0]);
+  const swaps=D.swaps?` You swapped ${D.swaps} prompt${D.swaps===1?'':'s'}.`:'';
+  $('d-endsub').textContent=(n?`${n} link${n===1?'':'s'} and ${D.pts} points.`:'The clock ran out before the first link. Try a practice run.')+(nextM&&n?` ${nextM[0]-n} more for ${nextM[1]}.`:'')+(rare?` Rarest link: ${rare.name}, said by ${fmtPct(rare.pct)} of players.`:'')+swaps;
+  renderChain($('d-endchain'),D.links);
+  const em={0:'⬜',1:'🟩',2:'🟦',3:'🟪',5:'🟥'},sqa=D.links.map(a=>em[a.unverified?0:a.pts]);
+  const rows=[];for(let i=0;i<sqa.length;i+=10)rows.push(sqa.slice(i,i+10).join(''));
+  const medal=md?` · ${{b:'🥉',s:'🥈',g:'🥇'}[md[2]]} ${md[1]}`:'';
+  $('d-share').textContent=`Daily Chain No. ${dayNum} · ${start}\n🔗 ${n} links${medal} · ${D.pts} pts\nTop ${n?topPct(n):100}% today\n${rows.join('\n')}${rare?`\nRarest: ${rare.name} (${fmtPct(rare.pct)})`:''}`;
+  $('d-copied').textContent='';
+  const c0=PROMPTS[0];
+  const pool=(BY[TODAY]||[]).filter(k=>inCat(k,c0)).map(k=>DICT.get(k)).sort((a,b)=>a.pts-b.pts||pct(b.k,b.pts)-pct(a.k,a.pts)).slice(0,5);
+  $('d-commonh').textContent=`Most said for link 1`;
+  $('d-common').innerHTML=pool.map(e=>{const p=pct(e.k,e.pts);return`<li><span>${esc(e.name)}</span><span class="num">${fmtPct(p)}</span><span class="pbar"><i style="width:${Math.min(100,p*2.5)}%"></i></span></li>`}).join('');
+}
+$('d-copy').onclick=()=>{const t=$('d-share').textContent;const ok=()=>{$('d-copied').textContent='Copied'};
+  const sel=()=>{const r=document.createRange();r.selectNodeContents($('d-share'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('d-copied').textContent='Selected. Copy it from here.'};
+  try{navigator.clipboard.writeText(t).then(ok,sel)}catch(e){sel()}};
+
+/* ---------- DUEL ---------- */
+const U={};let uTimer=null,uBot=null;
+const randCat=not=>rand(Object.keys(CATS).filter(c=>c!==not));
+const rec=()=>{const r=store.get('duel',{w:0,l:0});$('u-record').textContent=r.w+r.l?`Your record against Chainbot: ${r.w} won, ${r.l} lost.`:'';return r};rec();
+function uStart(){
+  clearTimeout(uBot);clearInterval(uTimer);
+  const req=rand('abcdeghklmnprst'.split(''));let cat=randCat();while(countFor(req,cat)<3)cat=randCat();
+  Object.assign(U,{req,cat,next:randCat(cat),used:new Set(),links:[],you:0,bot:0,turn:'you',over:false});
+  $('u-start').hidden=true;$('u-end').hidden=true;$('u-play').hidden=false;
+  $('u-chain').innerHTML='';$('u-msg').textContent='';$('u-trap').hidden=true;uTurn('you');
+}
+function uTurn(who){
+  U.turn=who;U.end=Date.now()+10000;
+  $('u-you').classList.toggle('on',who==='you');$('u-bot').classList.toggle('on',who==='bot');
+  $('u-req').textContent=L(U.req);$('u-req').classList.toggle('trap',countFor(U.req,U.cat,U.used)<3);
+  $('u-youn').textContent=`${U.you} link${U.you===1?'':'s'}`;$('u-botn').textContent=`${U.bot} link${U.bot===1?'':'s'}`;
+  const inp=$('u-input');inp.disabled=who!=='you';$('u-sub-btn').disabled=who!=='you';
+  $('u-askh').textContent=who==='you'?`Your turn: ${lc(ask(U.cat,U.req))}`:`Chainbot needs ${lc(ask(U.cat,U.req))}…`;
+  $('u-sub').textContent=who==='you'?'10 seconds. End on a hard letter like Q or X to trap Chainbot.':'Thinking.';
+  clearInterval(uTimer);uTimer=setInterval(uTick,100);uTick();
+  if(who==='you'){inp.value='';inp.focus()}else uBotMove();
+}
+function uTick(){const left=Math.max(0,U.end-Date.now());$('u-bari').style.width=(left/100)+'%';$('u-bar').classList.toggle('hot',left<3000);
+  if(!left&&U.turn==='you'&&!U.over)uOver(false,`You couldn't find ${lc(ask(U.cat,U.req))} in time.`);}
+function uAdd(r,who){r.you=who==='you';U.used.add(r.key);U.links.push(r);U[who]++;U.req=r.last;U.cat=U.next;U.next=randCat(U.cat);renderChain($('u-chain'),U.links,true);$('u-chain').parentElement.scrollTop=1e6;}
+$('u-form').onsubmit=async e=>{e.preventDefault();if(U.turn!=='you'||U.over||U.busy)return;const inp=$('u-input'),m=$('u-msg');let r=check(inp.value,U.req,U.used,U.cat);
+  if(r.ok&&r.unverified){U.busy=true;m.className='msg info';m.textContent='Checking Wikipedia…';r=await referee(r,inp.value);U.busy=false;if(U.over)return}
+  if(!r.ok){if(r.suggest)return showSugg(m,inp,r.suggest);m.className='msg bad';m.textContent=r.msg;inp.select();return}
+  uAdd(r,'you');m.className='msg ok';m.textContent=r.unverified?`${r.name} (unverified)`:`${r.fixed?'Autocorrected to ':''}${r.name} ✓`;
+  const t=$('u-trap');t.hidden=countFor(U.req,U.cat,U.used)>=4;if(!t.hidden)t.textContent=`Trap set! Chainbot needs ${lc(ask(U.cat,U.req))}.`;
+  uTurn('bot');};
+function uBotMove(){
+  const all=(BY[U.req]||[]).filter(k=>inCat(k,U.cat)&&!U.used.has(k)),n=all.length;let cand=all.filter(k=>DICT.get(k).pts<=2);if(cand.length<3)cand=all;cand=cand.sort(()=>Math.random()-.5).slice(0,40);
+  const pFail=n===0?1:n<=2?.6:n<=5?.3:n<=12?.1:.03;
+  const think=900+Math.random()*2200;
+  uBot=setTimeout(()=>{if(U.over)return;
+    if(Math.random()<pFail)return uOver(true,`Chainbot couldn't think of ${lc(ask(U.cat,U.req))}.`);
+    const nx=U.next,sorted=cand.slice().sort((a,b)=>countFor(a.slice(-1),nx,U.used)-countFor(b.slice(-1),nx,U.used));
+    const k=Math.random()<.4?sorted[0]:rand(cand);const e=DICT.get(k);const cat=U.cat;
+    uAdd({name:e.name,key:k,pts:e.pts,last:k.slice(-1),cat},'bot');
+    const m=$('u-msg');m.className='msg info';m.textContent=`Chainbot played ${e.name}.`;
+    const t=$('u-trap');t.hidden=countFor(U.req,U.cat,U.used)>=4;if(!t.hidden)t.textContent=`Chainbot trapped you: ${lc(ask(U.cat,U.req))}.`;
+    uTurn('you');
+  },Math.min(think,9000));
+}
+function uOver(win,why){U.over=true;clearInterval(uTimer);clearTimeout(uBot);
+  const r=rec();win?r.w++:r.l++;store.set('duel',r);rec();
+  $('u-play').hidden=true;$('u-end').hidden=false;
+  $('u-endbig').textContent=win?'You win':'Chainbot wins';
+  $('u-endsub').textContent=`${why} The chain reached ${U.links.length} link${U.links.length===1?'':'s'}.`;
+  renderChain($('u-endchain'),U.links.map(a=>({...a,showPts:false})));}
+$('u-go').onclick=uStart;$('u-again').onclick=uStart;
+
+/* ---------- GLOBAL (simulated) ---------- */
+const PEOPLE=['koala_kid','mia.w','jt2009','sunny','r0b','lachie_g','ava!','dev_ops','big_tom','noodle','priya','zz_top','kenji','lou','marta','sam_k','oli','fern','benny','hana'];
+const FLAGS=['🇦🇺','🇦🇺','🇦🇺','🇺🇸','🇺🇸','🇬🇧','🇳🇿','🇨🇦','🇮🇳','🇩🇪','🇧🇷','🇵🇭','🇯🇵','🇮🇪','🇿🇦'];
+const G={started:false,count:1284307+Math.floor((Date.now()-Date.UTC(2026,9,28))/4000),feed:[],recent:new Set(),mine:store.get('mine',0),cool:0,today:18402};
+function gPick(c){const cand=(BY[c]||[]).filter(k=>DICT.get(k).pts<=2&&!G.recent.has(k)&&!TRAPS.has(k.slice(-1)));return cand.length?rand(cand):null}
+function gPush(item){G.feed.unshift(item);G.feed.length=Math.min(G.feed.length,8);G.recent.add(item.key);G.count++;G.today++;G.req=item.last;}
+function gRender(fresh){
+  $('g-count').textContent=G.count.toLocaleString('en-AU');$('g-today').textContent=`${G.today.toLocaleString('en-AU')} links added today.`;
+  $('g-req').textContent=L(G.req);$('g-askh').textContent=`Add the next link: starts with ${L(G.req)}`;$('g-mine').textContent=G.mine;
+  $('g-feed').innerHTML=G.feed.map((a,i)=>`<li class="${a.you?'mine':''} ${fresh&&i===0?'fresh':''}"><span class="n">#${(G.count-i).toLocaleString('en-AU')}</span><span>${chip({...a,showPts:false})}</span><span class="who">${a.you?'you':esc(a.who)+' '+a.flag}</span></li>`).join('');
+}
+function gStart(){
+  if(G.started)return;G.started=true;
+  let c=rand('abdeghklmnprst'.split(''));const seed=[];
+  for(let i=0;i<8;i++){const k=gPick(c);if(!k)break;G.recent.add(k);seed.push({name:DICT.get(k).name,key:k,last:k.slice(-1),who:rand(PEOPLE),flag:rand(FLAGS)});c=k.slice(-1)}
+  G.count-=seed.length;seed.forEach(gPush);gRender();
+  const loop=()=>{setTimeout(()=>{const k=gPick(G.req);if(k){const prev=G.req;gPush({name:DICT.get(k).name,key:k,last:k.slice(-1),who:rand(PEOPLE),flag:rand(FLAGS)});gRender(true);
+      const m=$('g-msg');if(document.activeElement===$('g-input')&&$('g-input').value){m.className='msg info';m.textContent=`Someone beat you to it. The chain moved from ${L(prev)} to ${L(G.req)}.`}}loop()},3500+Math.random()*4500)};loop();
+  setInterval(()=>{if(G.cool>Date.now()){const s=Math.ceil((G.cool-Date.now())/1000);$('g-btn').disabled=true;$('g-btn').textContent=`${s}s`}else{$('g-btn').disabled=false;$('g-btn').textContent='Add'}},250);
+}
+$('g-form').onsubmit=async e=>{e.preventDefault();const inp=$('g-input'),m=$('g-msg');
+  if(G.cool>Date.now()){m.className='msg info';m.textContent='One link at a time. Wait for the timer.';return}
+  let r=check(inp.value,G.req,G.recent);
+  if(r.ok&&r.unverified){if(G.busy)return;G.busy=true;m.className='msg info';m.textContent='Checking Wikipedia…';const req=G.req;r=await referee(r,inp.value);G.busy=false;if(r.ok&&G.req!==req){m.className='msg info';m.textContent=`Someone beat you to it. The chain moved to ${L(G.req)}.`;return}}
+  if(!r.ok){if(r.suggest)return showSugg(m,inp,r.suggest);m.className='msg bad';m.textContent=r.msg.replace('already in this chain','in the last 1,000 links');return}
+  gPush({...r,who:'you',you:true});G.mine++;store.set('mine',G.mine);G.cool=Date.now()+20000;
+  m.className='msg ok';m.textContent=(r.fixed?`Autocorrected to ${r.name}. `:'')+`You added link #${G.count.toLocaleString('en-AU')}. Come back in 20 seconds for another.`;inp.value='';gRender(true);};
+
+/* home card: today's game number and letter */
+$('h-date').textContent=dateStr;$('h-chain').textContent=`No. ${dayNum} · starts with ${L(TODAY)}`;$('h-tiles').firstElementChild.textContent=L(TODAY);
+show(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>

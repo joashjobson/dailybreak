@@ -1,0 +1,7 @@
+{
+  "name": "daily-break",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily Break: one quick game a day, starting with Daily Chain. Runs on a Cloudflare Worker."
+}
