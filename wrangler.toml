@@ -20,6 +20,6 @@ SITE_URL = "https://daily-break.workers.dev"
 
 # Saved Wikipedia checks, so each unknown name is only looked up once (step 4 of the guide).
 # Create a KV namespace called daily-break-answers in Cloudflare, paste its ID below and remove the # from these three lines.
-[[daily-break-answers]]
+[[kv_namespaces]]
 binding = "ANSWERS"
 id = 9fbe1b6e275a466dbf84a9b546f25f50
