@@ -386,7 +386,7 @@ form.entry .btn{padding-inline:20px}
 
     <div class="card view">
       <ul class="facts">
-        <li><span>Every link has a <b>surprise prompt</b>: a country, then maybe a famous person, then an animal. You see it when you get there.</span></li>
+        <li><span>Every link has a <b>surprise prompt</b>, like a first name, then an animal, then a city. It <b>starts easy and gets harder</b> the longer your chain gets.</span></li>
         <li><span>There's <b>no end</b>. Add as many links as you can before the clock runs out.</span></li>
         <li><span>Stuck on a prompt? <b>Swap it</b> for 5 seconds.</span></li>
         <li><span><b>Rare answers buy time.</b> A common answer keeps the chain going. An uncommon one adds 2 seconds, a rare one 3, and one almost nobody says adds 5.</span></li>
@@ -752,26 +752,34 @@ const dayNum=Math.max(1,Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),no
 const POOL='abcdefghklmnprstw';
 const DAYSEED=hash(`${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`);
 const TODAY=POOL[DAYSEED%POOL.length];
-/* today's prompts: on the real site AI writes these at midnight per step and letter; here they come from the date */
-const PROMPTS=(()=>{const r=rng(DAYSEED),order=Object.keys(CATS),out=[];
-  while(out.length<MAXP){const c=order[Math.floor(r()*order.length)];if(c!==out[out.length-1]&&c!==out[out.length-2])out.push(c)}
-  if(countFor(TODAY,out[0])<3){const i=out.findIndex(c=>countFor(TODAY,c)>=3);[out[0],out[i]]=[out[i],out[0]]}
+/* today's prompts come from the date, so everyone gets the same ones.
+   They start easy and get harder: the first links are things everyone knows lots of (names, animals, food),
+   then countries, cities, people and brands come in, and after 15 links it's mostly the hard ones. */
+const TIERS={easy:['n','a','f','x'],mid:['t','c','p','b'],hard:['l','e','h']};
+const stageFor=i=>i<5?{easy:1}:i<10?{easy:2,mid:3}:i<15?{easy:1,mid:3,hard:2}:{mid:2,hard:3};
+const PROMPTS=(()=>{const r=rng(DAYSEED),out=[];
+  const pick=w=>{const pool=[];for(const t in w)for(const c of TIERS[t])for(let k=0;k<w[t];k++)pool.push(c);return pool[Math.floor(r()*pool.length)]};
+  while(out.length<MAXP){const c=pick(stageFor(out.length));if(c!==out[out.length-1]&&c!==out[out.length-2])out.push(c)}
+  if(countFor(TODAY,out[0])<3){const i=out.findIndex((c,j)=>j<5&&countFor(TODAY,c)>=3);if(i>0)[out[0],out[i]]=[out[i],out[0]]}
   return out})();
 const dateStr=now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
 $('d-letter').textContent=L(TODAY);$('d-num').textContent=`No. ${dayNum} · ${now.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}`;
 $('d-date').textContent=dateStr;$('d-today').textContent=`Today's chain starts with ${L(TODAY)}`;
 
-/* demo chain on the start screen */
-const DEMO=[['Brazil','c',1],['London','t',1],['Nelson Mandela','p',1],['Ayers Rock','l',5],['Kookaburra','a',2],['Avocado','f',1],['Oslo','t',2],['Octopus','a',1],['Sherlock Holmes','h',2],['Sushi','f',1],['Iceland','c',1],['Dracula','h',3]]
+/* demo chain on the start screen. The last answer (Kebab) ends in B, the first (Brazil) starts with it,
+   so the chain loops forever: old links slide off the left as new ones drop in on the right. */
+const DEMO=[['Brazil','c',1],['London','t',1],['Nelson Mandela','p',1],['Ayers Rock','l',5],['Kookaburra','a',3],['Avocado','f',2],['Oslo','t',2],['Octopus','a',1],['Sherlock Holmes','h',2],['Sushi','f',1],['Iceland','c',1],['Dubrovnik','t',3],['Kebab','f',2]]
   .map(([n,c,p])=>{const e=lookup(n);return{name:e?e.name:n,pts:e?e.pts:p,cat:c}});
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-let demoN=3;renderChain($('demo'),DEMO.slice(0,demoN));
+const DEMO_KEEP=7;let demoN=4;renderChain($('demo'),DEMO.slice(0,demoN));
 function demoStep(){
   if(!$('d-start').hidden&&!$('v-daily').hidden&&!document.hidden){
-    if(demoN<DEMO.length){appendLink($('demo'),DEMO[demoN],demoN);demoN++}
-    else{demoN=1;renderChain($('demo'),DEMO.slice(0,1))}
+    const el=$('demo'),st=el.closest('.strip');
+    /* drop the oldest link off the left without the strip jumping */
+    if(el.children.length>=DEMO_KEEP){const keep=el.children[1],x0=keep.getBoundingClientRect().left;st.style.scrollBehavior='auto';el.firstElementChild.remove();st.scrollLeft+=keep.getBoundingClientRect().left-x0;st.style.scrollBehavior=''}
+    appendLink(el,DEMO[demoN%DEMO.length],demoN);demoN++;
   }
-  setTimeout(demoStep,demoN>=DEMO.length?2600:1500);
+  setTimeout(demoStep,1500);
 }
 if(!reduce)setTimeout(demoStep,900);else renderChain($('demo'),DEMO.slice(0,6));
 
