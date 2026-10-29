@@ -9,6 +9,7 @@
 <meta property="og:description" content="Keep a word chain going for 90 seconds. Each answer's last letter starts the next one.">
 <meta name="theme-color" content="#FFD21F">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script>try{var t=JSON.parse(localStorage.getItem("dc-theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=Martian+Mono:wght@500;700&display=swap">
 <style>
@@ -53,7 +54,7 @@ h1,h2,h3{margin:0;font-family:var(--display);text-wrap:balance;letter-spacing:-.
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:2px solid var(--ink)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none}
-.brand svg{width:38px;height:30px;flex:none}
+.brand svg{width:32px;height:32px;flex:none;overflow:visible}
 .brand b{font:900 17px/1 var(--stencil);letter-spacing:-.02em}
 .right{display:flex;align-items:center;gap:6px}
 .tabs{display:flex;gap:2px;border:2px solid var(--ink);border-radius:999px;padding:2px;background:var(--surface)}
@@ -228,7 +229,7 @@ form.entry .btn{padding-inline:20px}
   .medal{padding:6px 10px}
   .tabs button{padding:5px 9px}
   .brand b{font-size:14px}
-  .brand svg{width:32px;height:26px}
+  .brand svg{width:28px;height:28px}
   .result .disc{width:72px;height:72px;font-size:30px}
 }
 
@@ -253,6 +254,26 @@ form.entry .btn{padding-inline:20px}
 .soon b{font:800 15px/1.1 var(--display)}
 .soon span{font-size:13px;color:var(--muted)}
 @media (max-width:520px){.soon{grid-template-columns:1fr 1fr 1fr;gap:8px}.soon div{padding:12px 10px}.soon b{font-size:13px}}
+/* v3: bonus time, background checks, friend duels */
+.stat{position:relative}
+.tbonus{position:absolute;right:8px;top:-12px;font:800 15px/1 var(--mono);color:var(--good);background:var(--surface);border:2px solid var(--good);border-radius:999px;padding:3px 7px;animation:tb 1.1s ease-out forwards;pointer-events:none}
+.tbonus.neg{color:var(--bad);border-color:var(--bad)}
+@keyframes tb{0%{transform:translateY(6px) scale(.8);opacity:0}20%{transform:none;opacity:1}75%{opacity:1}100%{transform:translateY(-14px);opacity:0}}
+.lk.pending .w b{border-bottom-style:dashed;opacity:.7}
+.lk.pending .t.end{opacity:.7}
+.lk.bad .w b{position:relative;color:var(--muted);border-color:var(--bad)}.lk.bad .w b::after{content:'';position:absolute;left:2px;right:2px;top:50%;height:3px;background:var(--bad);border-radius:2px}
+.lk.bad .t.end{box-shadow:0 4px 0 var(--bad)}
+.duelgrid{display:grid;gap:14px}
+.fname{font:700 17px var(--body);padding:11px 16px;border-radius:999px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);width:100%;max-width:280px}
+.fname:focus{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--hazard) 70%,transparent)}
+#f-code{text-transform:uppercase;letter-spacing:.2em;font-family:var(--mono)}
+.codetiles{display:flex;gap:7px}
+.codetiles span{width:46px;height:54px;border-radius:12px;display:grid;place-items:center;font:900 28px/1 var(--display);background:var(--hazard);color:var(--hazard-ink);border:2px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
+.pl .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--r0);margin-right:6px;vertical-align:1px}
+.pl .dot.on{background:var(--good)}
+.countdown{font:900 64px/1 var(--display);text-align:center;padding:10px 0}
+.score{font:800 22px/1.2 var(--display)}
+@media (prefers-reduced-motion: reduce){.tbonus{animation:none!important}}
 </style>
 </head>
 <body>
@@ -260,9 +281,9 @@ form.entry .btn{padding-inline:20px}
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#home" aria-label="Daily Break home">
-      <svg viewBox="0 0 78 62" aria-hidden="true">
-        <g fill="currentColor"><rect x="2" y="22" width="20" height="18" rx="5"/><rect x="25" y="22" width="20" height="18" rx="5"/><rect x="2" y="42" width="20" height="18" rx="5"/><rect x="25" y="42" width="20" height="18" rx="5"/><rect x="48" y="42" width="20" height="18" rx="5"/></g>
-        <rect x="54" y="6" width="20" height="18" rx="5" transform="rotate(18 64 15)" fill="#FFD21F" stroke="currentColor" stroke-width="3"/>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <g fill="currentColor"><rect x="6" y="46" width="40" height="40" rx="11"/><rect x="52" y="46" width="40" height="40" rx="11"/><rect x="6" y="2" width="40" height="40" rx="11"/></g>
+        <rect x="56" y="-2" width="40" height="40" rx="11" transform="rotate(16 74 22)" fill="#FFD21F" stroke="currentColor" stroke-width="6"/>
       </svg>
       <b>Daily Break</b>
     </a>
@@ -272,6 +293,7 @@ form.entry .btn{padding-inline:20px}
         <button role="tab" id="tab-duel" data-v="duel" aria-selected="false">Duel</button>
         <button role="tab" id="tab-global" data-v="global" aria-selected="false">Global</button>
       </nav>
+      <button class="icon-btn" id="thm" aria-label="Theme: auto" title="Light or dark"></button>
       <button class="icon-btn" id="snd" aria-pressed="true" aria-label="Sound on" title="Sound">♪</button>
     </div>
   </div>
@@ -320,7 +342,7 @@ form.entry .btn{padding-inline:20px}
         <li><span>Every link has a <b>surprise prompt</b>: a country, then maybe a famous person, then an animal. You see it when you get there.</span></li>
         <li><span>There's <b>no end</b>. Add as many links as you can before the clock runs out.</span></li>
         <li><span>Stuck on a prompt? <b>Swap it</b> for 5 seconds.</span></li>
-        <li><span><b>Rare answers score more.</b> What half the world says is worth 1. What almost nobody says is worth 5.</span></li>
+        <li><span><b>Rare answers buy time.</b> A common answer keeps the chain going. An uncommon one adds 2 seconds, a rare one 3, and one almost nobody says adds 5.</span></li>
       </ul>
       <div class="medals" id="medals"></div>
       <div class="legend" id="legend"></div>
@@ -333,7 +355,7 @@ form.entry .btn{padding-inline:20px}
     <div class="hud">
       <div class="stat" id="d-tstat"><b id="d-time">90.0</b><span>Seconds</span></div>
       <div class="stat"><b id="d-links">0</b><span>Links</span></div>
-      <div class="stat"><b id="d-pts">0</b><span>Points</span></div>
+      <div class="stat"><b id="d-pts">+0s</b><span>Bonus</span></div>
     </div>
     <div class="timebar" id="d-bar"><i id="d-bari"></i></div>
     <div class="progress">
@@ -380,13 +402,69 @@ form.entry .btn{padding-inline:20px}
 
 <!-- DUEL -->
 <section class="view" id="v-duel" hidden>
-  <div class="view" id="u-start">
+  <div class="view duelgrid" id="u-start">
     <div class="card view">
-      <p class="eyebrow">Duel</p>
-      <h2 style="font-size:clamp(28px,8vw,40px)">You vs Chainbot</h2>
-      <p>Take turns adding links. You get 10 seconds a turn. End your answer on a hard letter like <b>Q</b> or <b>X</b> to trap the other side.</p>
+      <p class="eyebrow">Duel a friend</p>
+      <h2 style="font-size:clamp(28px,8vw,40px)">Play a friend</h2>
+      <p>Make a code and send it to a friend. You take turns, and each answer has to start with the last letter of theirs. 15 seconds a turn. Run out of time and you lose.</p>
+      <input class="fname" id="f-name" maxlength="16" placeholder="Your name" aria-label="Your name" autocomplete="nickname">
+      <div class="row"><button class="btn" id="f-new" type="button">Make a code</button></div>
+      <form class="entry" id="f-joinf" autocomplete="off" style="max-width:340px">
+        <input id="f-code" type="text" maxlength="5" placeholder="Their code" aria-label="Friend's code" autocapitalize="characters" spellcheck="false" enterkeyhint="go">
+        <button class="btn ghost sm" type="submit">Join</button>
+      </form>
+      <div class="msg" id="f-msg" role="status" aria-live="polite"></div>
+    </div>
+    <div class="card view">
+      <p class="eyebrow">Practice</p>
+      <h2 style="font-size:24px">You vs Chainbot</h2>
+      <p>Same rules against the computer, 10 seconds a turn. End your answer on a hard letter like <b>Q</b> or <b>X</b> to trap the other side.</p>
       <p class="muted small" id="u-record"></p>
-      <div class="row"><button class="btn" id="u-go">Start a duel</button></div>
+      <div class="row"><button class="btn ghost" id="u-go">Play Chainbot</button></div>
+    </div>
+  </div>
+
+  <div class="view" id="f-wait" hidden>
+    <div class="card view">
+      <p class="eyebrow">Duel a friend</p>
+      <h2 style="font-size:28px">Send your friend this code</h2>
+      <div class="codetiles" id="f-tiles" aria-label="Invite code"></div>
+      <div class="row"><button class="btn sm" id="f-share" type="button">Share invite</button><button class="btn ghost sm" id="f-copy" type="button">Copy link</button><span class="muted small" id="f-copied" role="status"></span></div>
+      <p class="muted" id="f-waitmsg">Waiting for your friend to join. Keep this page open.</p>
+      <div class="row"><button class="btn ghost sm" id="f-cancel" type="button">Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="view" id="f-play" hidden>
+    <div class="players">
+      <div class="pl" id="f-p0"><b></b><span></span></div>
+      <span class="vs">VS</span>
+      <div class="pl" id="f-p1"><b></b><span></span></div>
+    </div>
+    <div class="timebar thin" id="f-bar"><i id="f-bari"></i></div>
+    <div class="card view">
+      <div class="countdown" id="f-count" hidden>3</div>
+      <div class="ask" id="f-ask">
+        <div class="bigring" id="f-req">B</div>
+        <div style="min-width:0"><h2 id="f-askh" style="font-size:22px">Your turn</h2><p id="f-sub"></p></div>
+      </div>
+      <form class="entry" id="f-form" autocomplete="off">
+        <input id="f-input" type="text" placeholder="Type an answer" aria-label="Your answer" enterkeyhint="go" autocapitalize="words" spellcheck="false">
+        <button class="btn sm" id="f-btn" type="submit">Link</button>
+      </form>
+      <div class="msg" id="f-pmsg" role="status" aria-live="polite"></div>
+      <div class="row"><button class="btn ghost sm" id="f-giveup" type="button">Give up</button></div>
+    </div>
+    <div class="chainwrap"><div class="strip"><ol class="chain" id="f-chain"></ol></div></div>
+  </div>
+
+  <div class="view" id="f-end" hidden>
+    <div class="card view">
+      <h2 id="f-endbig" style="font-size:36px">You win</h2>
+      <p id="f-endsub"></p>
+      <p class="score" id="f-score"></p>
+      <ol class="chain wrapc" id="f-endchain"></ol>
+      <div class="row"><button class="btn" id="f-again" type="button">Rematch</button><button class="btn ghost sm" id="f-leave" type="button">Leave</button><span class="muted small" id="f-againmsg"></span></div>
     </div>
   </div>
   <div class="view" id="u-play" hidden>
@@ -442,7 +520,7 @@ form.entry .btn{padding-inline:20px}
   </div>
 </section>
 
-<footer class="foot"><span><b>Daily Break</b> · one game a day, more coming</span><span>Answers are checked against about 240,000 real names, then <a href="https://www.wikidata.org/" rel="noopener">Wikidata</a>.</span></footer>
+<footer class="foot"><span><b>Daily Break</b> · one game a day, more coming</span><span>Every answer is checked, so only real names count.</span></footer>
 </main>
 <script src="answers.js"></script>
 <script>
@@ -496,6 +574,11 @@ const titleCase=s=>s.trim().replace(/\s+/g,' ').replace(/\b([a-z])/g,m=>m.toUppe
 const rand=a=>a[Math.floor(Math.random()*a.length)];
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const store={get(k,d){try{const v=localStorage.getItem('dc-'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('dc-'+k,JSON.stringify(v))}catch(e){}}};
+/* ---------- theme: auto follows the device, or the player picks light or dark ---------- */
+(function(){const b=document.getElementById('thm'),order=['auto','light','dark'],icon={auto:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',light:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>',dark:'<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" fill="currentColor"/></svg>'},label={auto:'Theme: auto',light:'Theme: light',dark:'Theme: dark'};
+let t=store.get('theme','auto');if(!order.includes(t))t='auto';
+const apply=()=>{if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t);b.innerHTML=icon[t];b.setAttribute('aria-label',label[t]);b.title=label[t]};apply();
+b.onclick=()=>{t=order[(order.indexOf(t)+1)%3];store.set('theme',t);apply()}})();
 const $=id=>document.getElementById(id);
 
 /* autocorrect: closest known answer within 1 typo (2 for long names), allowing swapped letters */
@@ -532,16 +615,19 @@ function check(text,req,used,cat){
   return {ok:false,msg:"That doesn't look like a real name. Try another."};
 }
 
-/* backup referee: answers missing from the list are looked up on Wikidata by the site's /api/check (each name once, then cached) */
-async function referee(r,text){
+/* backup referee: answers missing from the list are looked up by the site's /api/check (each name once, then cached) */
+const REF={};
+function referee(r,text){const id=(r.cat||'x')+':'+r.key;if(!REF[id])REF[id]=referee1(r,text).then(v=>{if(!v.ok&&v.offline)delete REF[id];return v});
+  return REF[id].then(v=>v.ok?Object.assign(r,{name:v.name,pts:v.pts,pct:v.pct,unverified:false,wiki:true}):v)}
+async function referee1(r0,text){const r={...r0};
   try{
-    const res=await fetch(`/api/check?q=${encodeURIComponent(text.trim())}&cat=${r.cat||'x'}`);
+    const res=await fetch(`/api/check?q=${encodeURIComponent(text.trim())}&cat=${r.cat||'x'}`,{signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined});
     if(!res.ok)throw 0;
     const v=await res.json();
     if(v.ok){if(v.name&&norm(v.name)===r.key)r.name=v.name;r.pts=v.pts;r.pct=pct(r.key,v.pts);r.unverified=false;r.wiki=true;return r}
     if(v.reason==='wrongcat')return{ok:false,msg:`${v.name||r.name} doesn't count as ${an(catWord(r.cat))}. Try another.`};
     return{ok:false,msg:`Couldn't find “${r.name}”. Check the spelling or try another.`};
-  }catch(e){return{ok:false,msg:`Couldn't check “${r.name}” right now. Try another.`}}  /* strict: only real answers count */
+  }catch(e){return{ok:false,offline:true,msg:`Couldn't check “${r.name}” right now. Try another.`}}  /* strict: only real answers count */
 }
 
 /* ---------- sound: a short metal clink, a snap at time up ---------- */
@@ -570,9 +656,9 @@ function linkHTML(a,i,fresh){
   const mid=l>f?s.slice(f+1,l).toUpperCase():'',first=norm(s[f]||'')||'?',last=norm(s[l]||'')||'?';
   const chars=[...mid].map((c,n)=>`<i style="--d:${n};--r:${(n%2?1:-1)*(25+(n*17)%45)}deg">${esc(c)}</i>`).join('');
   lastEd=fresh?mid.length*32+140:0;
-  const pts=a.showPts===false||a.pts==null?'':(a.unverified?'?':'+'+a.pts);
+  const pts=a.showPts===false?'':a.bad?'✗':a.pending?'…':a.pts==null?'':BONUS[a.pts]?'+'+BONUS[a.pts]+'s':'';
   const label=[a.cat?catShort(a.cat):'',pts].filter(Boolean).join(' · ');
-  const cls=`lk r${a.unverified?0:(a.pts||0)}${a.you?' you':''}${fresh?' new':''}${i===0?' first':''}`;
+  const cls=`lk r${a.unverified||a.bad?0:(a.pts||0)}${a.you?' you':''}${fresh?' new':''}${i===0?' first':''}${a.pending?' pending':''}${a.bad?' bad':''}`;
   return `<li class="${cls}" style="--ed:${lastEd}ms"><span class="t start">${L(first)}</span><span class="w">${label?`<small>${label}</small>`:''}<b>${chars}</b></span><span class="t end" style="--d:${mid.length}">${L(last)}</span></li>`;
 }
 /* in a wrapped chain, repeat the joining letter at the start of each new row */
@@ -592,18 +678,20 @@ function chip(a){const s=a.name;let f=-1,l=-1;for(let i=/^the\s+/i.test(s)?4:0;i
 const MEDALS=[[10,'Bronze','b'],[20,'Silver','s'],[30,'Gold','g']];
 const medalFor=n=>MEDALS.filter(m=>n>=m[0]).pop();
 const topPct=n=>Math.max(1,Math.round(100/(1+Math.exp((n-8)/3.5))));
-$('legend').innerHTML=[[1,'Common · 1'],[2,'Uncommon · 2'],[3,'Rare · 3'],[5,'Very rare · 5']].map(([p,t])=>`<span><i style="border-color:var(--r${p})"></i>${t}</span>`).join('');
+$('legend').innerHTML=[[1,'Common'],[2,'Uncommon · +2s'],[3,'Rare · +3s'],[5,'Very rare · +5s']].map(([p,t])=>`<span><i style="border-color:var(--r${p})"></i>${t}</span>`).join('');
 $('medals').innerHTML=MEDALS.map(([n,name,c])=>`<div class="medal"><span class="disc ${c}">${n}</span><div><b>${name}</b><span>${n} links · top ${topPct(n)}%</span></div></div>`).join('');
 
 /* ---------- tabs ---------- */
 const VIEWS=['home','daily','duel','global'];
-function show(v){if(!VIEWS.includes(v))v='home';VIEWS.forEach(x=>{$('v-'+x).hidden=x!==v;const t=$('tab-'+x);if(t)t.setAttribute('aria-selected',x===v)});
+function show(v){if(/^duel=/.test(v))v='duel';if(!VIEWS.includes(v))v='home';VIEWS.forEach(x=>{$('v-'+x).hidden=x!==v;const t=$('tab-'+x);if(t)t.setAttribute('aria-selected',x===v)});
   document.querySelector('.tabs').hidden=v==='home';if(v==='global')gStart();scrollTo({top:0});}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{location.hash=b.dataset.v;show(b.dataset.v)});
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
 
 /* ---------- DAILY ---------- */
-const CLOCK=90000,SWAP_COST=5000,MAXP=70;
+const CLOCK=90000,SWAP_COST=5000,MAXP=70,MISS_COST=5000;
+/* rare answers buy time instead of points (playtest ask): seconds added per rarity tier */
+const BONUS={1:0,2:2,3:3,5:5};
 const now=new Date();
 const dayNum=Math.max(1,Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-Date.UTC(2026,9,28))/864e5)+1);
 const POOL='abcdefghklmnprstw';
@@ -632,10 +720,10 @@ function demoStep(){
 }
 if(!reduce)setTimeout(demoStep,900);else renderChain($('demo'),DEMO.slice(0,6));
 
-const D={};let dTimer=null,dBusy=false;
+const D={};let dTimer=null;
 function dStart(){
   ac();
-  Object.assign(D,{req:TODAY,cats:PROMPTS.slice(),used:new Set(),links:[],pts:0,swaps:0,t0:Date.now(),end:Date.now()+CLOCK,ending:false,done:false});
+  Object.assign(D,{req:TODAY,cats:PROMPTS.slice(),used:new Set(),links:[],bonus:0,medal:0,swaps:0,checks:[],t0:Date.now(),end:Date.now()+CLOCK,ending:false,done:false});
   $('d-start').hidden=true;$('d-end').hidden=true;$('d-play').hidden=false;
   $('d-chain').innerHTML='';$('d-msg').textContent='';$('d-trap').hidden=true;
   document.querySelectorAll('.snapstamp').forEach(s=>s.remove());
@@ -648,9 +736,16 @@ function dReq(){const i=D.links.length,c=D.cats[i];
   $('d-req').textContent=L(D.req);$('d-req').classList.toggle('trap',countFor(D.req,c,D.used)<3);
   $('d-cat').textContent=CATS[c][0];$('d-askp').textContent=`starting with ${L(D.req)}`;
   const a=$('d-ask');a.classList.remove('flip');void a.offsetWidth;a.classList.add('flip');
-  $('d-links').textContent=i;$('d-pts').textContent=D.pts;}
+  dStats();}
+/* links that count: rejected ones stay in the chain (so the letters still join up) but don't count */
+const dCount=()=>D.links.filter(a=>!a.bad).length;
+function dStats(){$('d-links').textContent=dCount();$('d-pts').textContent='+'+D.bonus+'s'}
+function addTime(ms){if(D.ending)return;D.end+=ms;const el=document.createElement('span');el.className='tbonus'+(ms<0?' neg':'');el.textContent=(ms>0?'+':'−')+Math.abs(ms/1000)+'s';
+  $('d-tstat').appendChild(el);setTimeout(()=>el.remove(),1200);dTick()}
+function dMedal(){const n=dCount(),md=MEDALS.find(x=>x[0]===n);if(md&&n>D.medal){D.medal=n;medalPop(md)}dProgress()}
+function dRelink(idx){const li=$('d-chain').children[idx];if(!li)return;const t=document.createElement('template');t.innerHTML=linkHTML(D.links[idx],idx,false);li.replaceWith(t.content.firstElementChild)}
 function dProgress(){
-  const n=D.links.length,cap=30,next=MEDALS.find(m=>n<m[0]);
+  const n=dCount(),cap=30,next=MEDALS.find(m=>n<m[0]);
   $('d-pfill').style.width=Math.min(100,n/cap*100)+'%';
   $('d-ptrack').querySelectorAll('.notch').forEach(x=>x.remove());
   $('d-ptrack').insertAdjacentHTML('beforeend',MEDALS.map(([t,,c])=>`<span class="notch" style="left:${t/cap*100}%"><span class="disc ${n>=t?c:'n'}">${t}</span></span>`).join(''));
@@ -658,56 +753,65 @@ function dProgress(){
   $('d-plabel2').textContent=next?`${n} / ${next[0]}`:`${n} links`;
 }
 function medalPop(m){const el=document.createElement('div');el.className='medalpop';el.innerHTML=`<span class="disc ${m[2]}">${m[0]}</span><b>${m[1]}</b>`;document.body.appendChild(el);setTimeout(()=>el.remove(),2300);medalSnd();buzz([20,40,20])}
-function dTick(){if(D.ending)return;const left=Math.max(0,D.end-Date.now());$('d-time').textContent=(left/1000).toFixed(1);$('d-bari').style.width=(left/CLOCK*100)+'%';
+function dTick(){if(D.ending)return;const left=Math.max(0,D.end-Date.now());$('d-time').textContent=(left/1000).toFixed(1);$('d-bari').style.width=Math.min(100,left/CLOCK*100)+'%';
   const hot=left<10000;$('d-tstat').classList.toggle('hot',hot);$('d-bar').classList.toggle('hot',hot);if(!left)dSnap();}
 /* time up: the newest link snaps off, then the result */
 function dSnap(){
-  D.ending=true;clearInterval(dTimer);D.req=null;dBusy=false;$('d-input').disabled=true;$('d-time').textContent='0.0';$('d-bari').style.width='0%';
+  D.ending=true;clearInterval(dTimer);D.req=null;$('d-input').disabled=true;$('d-time').textContent='0.0';$('d-bari').style.width='0%';
   const last=$('d-chain').lastElementChild;if(last&&!D.done){last.classList.remove('new');last.classList.add('snapped')}
   const st=document.createElement('div');st.className='snapstamp';st.textContent=D.done?'DONE':'TIME';$('d-chainwrap').appendChild(st);
   $('d-chainwrap').scrollIntoView({block:'center',behavior:reduce?'auto':'smooth'});
-  snapSnd();buzz(60);setTimeout(dFinish,reduce?300:1400);
+  snapSnd();buzz(60);
+  /* give any background checks a moment to finish before the result */
+  const wait=new Promise(r=>setTimeout(r,reduce?300:1400)),checks=Promise.race([Promise.allSettled(D.checks),new Promise(r=>setTimeout(r,5000))]);
+  Promise.all([wait,checks]).then(()=>{for(const a of D.links)if(a.pending){a.pending=false;a.bad=true}dFinish()});
 }
 $('d-go').onclick=dStart;$('d-again').onclick=dStart;
 $('d-quit').onclick=()=>{if(D.ending)return;D.end=Date.now();dTick()};
-$('d-swap').onclick=()=>{if(!D.req||dBusy)return;const i=D.links.length,cur=D.cats[i],next=D.cats[i+1];
+$('d-swap').onclick=()=>{if(!D.req||D.ending)return;const i=D.links.length,cur=D.cats[i],next=D.cats[i+1];
   const opts=Object.keys(CATS).filter(c=>c!==cur&&c!==next&&countFor(D.req,c,D.used)>=3);
   if(!opts.length){$('d-msg').className='msg bad';$('d-msg').textContent='No other prompt works for this letter.';return}
   D.cats[i]=rand(opts);D.swaps++;D.end-=SWAP_COST;$('d-trap').hidden=true;
   $('d-msg').className='msg info';$('d-msg').textContent='Swapped. That cost 5 seconds.';dReq();dTick();$('d-input').focus();};
 $('d-form').onsubmit=e=>{
-  e.preventDefault();if(dBusy||!D.req)return;const inp=$('d-input'),i=D.links.length;const r=check(inp.value,D.req,D.used,D.cats[i]);const m=$('d-msg');
+  e.preventDefault();if(!D.req||D.ending)return;const inp=$('d-input'),i=D.links.length;const r=check(inp.value,D.req,D.used,D.cats[i]);const m=$('d-msg');
   if(!r.ok){if(r.suggest)return showSugg(m,inp,r.suggest);m.className='msg bad';m.textContent=r.msg;inp.select();buzz(30);return}
-  const accept=()=>{
-    if(D.ending||Date.now()>D.end)return;
-    D.used.add(r.key);D.links.push(r);D.pts+=r.unverified?1:r.pts;D.req=r.last;
-    m.className='msg ok';m.textContent=(r.fixed?'Autocorrected. ':'')+(r.unverified?`${r.name}: unverified, +1`:`${r.name}: ${fmtPct(r.pct)} of players said this, +${r.pts}`);
-    appendLink($('d-chain'),r,D.links.length-1);inp.value='';clink(r.unverified?1:r.pts,lastEd/1000+.12);buzz(12);
-    const n=D.links.length,md=MEDALS.find(x=>x[0]===n);if(md)medalPop(md);dProgress();
-    if(n>=MAXP){D.done=true;D.end=Date.now();return dSnap()}
-    const nc=D.cats[n],t=$('d-trap');t.hidden=countFor(r.last,nc,D.used)>=3;
-    if(!t.hidden)t.textContent=`Careful: not many ${catWord(nc)} answers start with ${L(r.last)}. You can swap the prompt for 5 seconds.`;
-    dReq();inp.focus();
-  };
-  if(r.unverified){dBusy=true;m.className='msg info';m.textContent='Checking Wikipedia…';const typed=inp.value;referee(r,typed).then(v=>{dBusy=false;if(!v.ok){m.className='msg bad';m.textContent=v.msg;if(inp.value===typed)inp.select();buzz(30);return}accept()});}
-  else accept();
+  if(Date.now()>D.end)return;
+  /* not on the list: it counts straight away and is checked in the background, so nobody waits */
+  if(r.unverified){r.pending=true;r.unverified=false;r.pts=null;}
+  D.used.add(r.key);D.links.push(r);D.req=r.last;const idx=D.links.length-1;
+  const b=r.pending?0:BONUS[r.pts]||0;
+  if(r.pending)m.className='msg info',m.textContent=`${r.name}: that's a rare one. Keep going while we check it.`;
+  else{m.className='msg ok';m.textContent=(r.fixed?'Autocorrected. ':'')+`${r.name}: ${fmtPct(r.pct)} of players said this`+(b?`, +${b} seconds`:'')}
+  appendLink($('d-chain'),r,idx);const typed=inp.value;inp.value='';clink(r.pts||1,lastEd/1000+.12);buzz(12);
+  if(b){D.bonus+=b;addTime(b*1000)}
+  dMedal();
+  if(r.pending){const run=D.t0;D.checks.push(referee(r,typed).then(v=>{if(D.t0!==run)return;r.pending=false;
+    if(v.ok){const bb=BONUS[r.pts]||0;if(!D.ending&&bb){D.bonus+=bb;addTime(bb*1000)}if(!D.ending){m.className='msg ok';m.textContent=`${r.name} checks out`+(bb?`: +${bb} seconds`:'.')}}
+    else{r.bad=true;if(!D.ending){if(!v.offline)addTime(-MISS_COST);m.className='msg bad';m.textContent=v.offline?`Couldn't check ${r.name}, so it doesn't count.`:`${r.name} isn't a real ${catWord(r.cat)} we know, so it doesn't count. −5 seconds.`;buzz(30)}}
+    if(!D.ending)dRelink(idx);dStats();dMedal()}))}
+  if(D.links.length>=MAXP){D.done=true;D.end=Date.now();return dSnap()}
+  const n=D.links.length,nc=D.cats[n],t=$('d-trap');t.hidden=countFor(r.last,nc,D.used)>=3;
+  if(!t.hidden)t.textContent=`Careful: not many ${catWord(nc)} answers start with ${L(r.last)}. You can swap the prompt for 5 seconds.`;
+  dReq();inp.focus();
 };
 function dFinish(){
   $('d-play').hidden=true;$('d-end').hidden=false;scrollTo({top:0});
-  const n=D.links.length,start=L(TODAY),md=medalFor(n);
+  const n=dCount(),start=L(TODAY),md=medalFor(n);
   $('d-endnum').textContent=`Daily Chain No. ${dayNum} · Starts with ${start}`;
   const disc=$('d-enddisc');disc.className='disc '+(md?md[2]:'n');disc.textContent=n;
   $('d-endbig').textContent=md?`${md[1]} chain`:`${n} link${n===1?'':'s'}`;
   $('d-rank').textContent=n?`Top ${topPct(n)}% today`:'No links this time';
-  const ver=D.links.filter(a=>!a.unverified),rare=ver.slice().sort((a,b)=>a.pct-b.pct)[0];
+  const ver=D.links.filter(a=>!a.unverified&&!a.bad),rare=ver.slice().sort((a,b)=>a.pct-b.pct)[0];
   const nextM=MEDALS.find(x=>n<x[0]);
   const swaps=D.swaps?` You swapped ${D.swaps} prompt${D.swaps===1?'':'s'}.`:'';
-  $('d-endsub').textContent=(n?`${n} link${n===1?'':'s'} and ${D.pts} points.`:'The clock ran out before the first link. Try a practice run.')+(nextM&&n?` ${nextM[0]-n} more for ${nextM[1]}.`:'')+(rare?` Rarest link: ${rare.name}, said by ${fmtPct(rare.pct)} of players.`:'')+swaps;
+  const bad=D.links.length-n,badTxt=bad?` ${bad} answer${bad===1?" wasn't":"s weren't"} real, so ${bad===1?'it doesn’t':'they don’t'} count.`:'';
+  $('d-endsub').textContent=(n?`${n} link${n===1?'':'s'} and ${D.bonus} seconds of bonus time.`:'The clock ran out before the first link. Try a practice run.')+(nextM&&n?` ${nextM[0]-n} more for ${nextM[1]}.`:'')+(rare?` Rarest link: ${rare.name}, said by ${fmtPct(rare.pct)} of players.`:'')+swaps+badTxt;
   renderChain($('d-endchain'),D.links);
-  const em={0:'⬜',1:'🟩',2:'🟦',3:'🟪',5:'🟥'},sqa=D.links.map(a=>em[a.unverified?0:a.pts]);
+  const em={0:'⬜',1:'🟩',2:'🟦',3:'🟪',5:'🟥'},sqa=D.links.filter(a=>!a.bad).map(a=>em[a.unverified?0:a.pts]);
   const rows=[];for(let i=0;i<sqa.length;i+=10)rows.push(sqa.slice(i,i+10).join(''));
   const medal=md?` · ${{b:'🥉',s:'🥈',g:'🥇'}[md[2]]} ${md[1]}`:'';
-  $('d-share').textContent=`Daily Chain No. ${dayNum} · ${start}\n🔗 ${n} links${medal} · ${D.pts} pts\nTop ${n?topPct(n):100}% today\n${rows.join('\n')}${rare?`\nRarest: ${rare.name} (${fmtPct(rare.pct)})`:''}`;
+  $('d-share').textContent=`Daily Chain No. ${dayNum} · ${start}\n🔗 ${n} link${n===1?'':'s'}${medal} · +${D.bonus}s bonus\nTop ${n?topPct(n):100}% today\n${rows.join('\n')}${rare?`\nRarest: ${rare.name} (${fmtPct(rare.pct)})`:''}`;
   $('d-copied').textContent='';
   const c0=PROMPTS[0];
   const pool=(BY[TODAY]||[]).filter(k=>inCat(k,c0)).map(k=>DICT.get(k)).sort((a,b)=>a.pts-b.pts||pct(b.k,b.pts)-pct(a.k,a.pts)).slice(0,5);
@@ -740,13 +844,13 @@ function uTurn(who){
   clearInterval(uTimer);uTimer=setInterval(uTick,100);uTick();
   if(who==='you'){inp.value='';inp.focus()}else uBotMove();
 }
-function uTick(){const left=Math.max(0,U.end-Date.now());$('u-bari').style.width=(left/100)+'%';$('u-bar').classList.toggle('hot',left<3000);
+function uTick(){if(U.busy)return;const left=Math.max(0,U.end-Date.now());$('u-bari').style.width=(left/100)+'%';$('u-bar').classList.toggle('hot',left<3000);
   if(!left&&U.turn==='you'&&!U.over)uOver(false,`You couldn't find ${lc(ask(U.cat,U.req))} in time.`);}
 function uAdd(r,who){r.you=who==='you';U.used.add(r.key);U.links.push(r);U[who]++;U.req=r.last;U.cat=U.next;U.next=randCat(U.cat);renderChain($('u-chain'),U.links,true);$('u-chain').parentElement.scrollTop=1e6;}
 $('u-form').onsubmit=async e=>{e.preventDefault();if(U.turn!=='you'||U.over||U.busy)return;const inp=$('u-input'),m=$('u-msg');let r=check(inp.value,U.req,U.used,U.cat);
-  if(r.ok&&r.unverified){U.busy=true;m.className='msg info';m.textContent='Checking Wikipedia…';r=await referee(r,inp.value);U.busy=false;if(U.over)return}
+  if(r.ok&&r.unverified){U.busy=true;const left=U.end-Date.now();U.end=Infinity;m.className='msg info';m.textContent='Checking that one. Your clock is paused.';r=await referee(r,inp.value);U.busy=false;if(U.over)return;U.end=Date.now()+Math.max(left,1500)}
   if(!r.ok){if(r.suggest)return showSugg(m,inp,r.suggest);m.className='msg bad';m.textContent=r.msg;inp.select();return}
-  uAdd(r,'you');m.className='msg ok';m.textContent=r.unverified?`${r.name} (unverified)`:`${r.fixed?'Autocorrected to ':''}${r.name} ✓`;
+  uAdd(r,'you');m.className='msg ok';m.textContent=`${r.fixed?'Autocorrected to ':''}${r.name} ✓`;
   const t=$('u-trap');t.hidden=countFor(U.req,U.cat,U.used)>=4;if(!t.hidden)t.textContent=`Trap set! Chainbot needs ${lc(ask(U.cat,U.req))}.`;
   uTurn('bot');};
 function uBotMove(){
@@ -770,6 +874,95 @@ function uOver(win,why){U.over=true;clearInterval(uTimer);clearTimeout(uBot);
   $('u-endsub').textContent=`${why} The chain reached ${U.links.length} link${U.links.length===1?'':'s'}.`;
   renderChain($('u-endchain'),U.links.map(a=>({...a,showPts:false})));}
 $('u-go').onclick=uStart;$('u-again').onclick=uStart;
+const uBack=()=>{['u-play','u-end','f-wait','f-play','f-end'].forEach(id=>$(id).hidden=true);$('u-start').hidden=false};
+
+/* ---------- DUEL A FRIEND (real, through the site's /api/duel rooms) ---------- */
+const F={ws:null,code:'',state:null,off:0,me:-1,timer:null,busy:false,tries:0,leaving:false};
+const pid=store.get('pid','')||(()=>{const v=Math.random().toString(36).slice(2)+Date.now().toString(36);store.set('pid',v);return v})();
+$('f-name').value=store.get('name','');
+const fName=()=>{const v=$('f-name').value.trim().replace(/\s+/g,' ').slice(0,16);if(v)store.set('name',v);return v||'Player'};
+const fMsg=(t,c='bad')=>{$('f-msg').className='msg '+c;$('f-msg').textContent=t};
+const fShow=id=>{['u-start','u-play','u-end','f-wait','f-play','f-end'].forEach(x=>$(x).hidden=x!==id);scrollTo({top:0})};
+const inviteURL=code=>`${location.origin}${location.pathname}#duel=${code}`;
+$('f-new').onclick=async()=>{fName();$('f-new').disabled=true;fMsg('Making a code…','info');
+  try{const r=await fetch('/api/duel/new',{method:'POST'});const v=await r.json();if(!r.ok||!v.code)throw 0;fMsg('','info');fJoin(v.code)}
+  catch(e){fMsg("Couldn't make a duel right now. Try again in a moment.")}
+  $('f-new').disabled=false};
+$('f-joinf').onsubmit=e=>{e.preventDefault();const c=$('f-code').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(c.length!==5)return fMsg('Codes have 5 letters and numbers.');fName();fJoin(c)};
+function fJoin(code){F.code=code;F.leaving=false;F.tries=0;F.state=null;history.replaceState(null,'','#duel='+code);fConnect()}
+function fConnect(){
+  if(F.ws){F.ws.onclose=null;try{F.ws.close()}catch(e){}}
+  const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/api/duel/${F.code}/ws?pid=${encodeURIComponent(pid)}&name=${encodeURIComponent(fName())}`);
+  F.ws=ws;
+  ws.onopen=()=>{F.tries=0};
+  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}
+    if(m.t==='error'){F.leaving=true;fShow('u-start');fMsg(m.msg);history.replaceState(null,'','#duel');return}
+    if(m.t==='nope'){F.busy=false;$('f-pmsg').className='msg bad';$('f-pmsg').textContent=m.msg;$('f-input').select();return}
+    if(m.t==='state'){F.off=m.now-Date.now();const prev=F.state;F.state=m;fRender(prev,m)}};
+  ws.onclose=()=>{if(F.leaving||F.ws!==ws)return;F.tries++;
+    if(F.tries>6){fShow('u-start');fMsg('Lost the connection to the duel. Join again with the code.');return}
+    setTimeout(()=>{if(!F.leaving&&F.ws===ws)fConnect()},Math.min(4000,400*F.tries))};
+}
+const fSend=o=>{try{F.ws&&F.ws.readyState===1&&F.ws.send(JSON.stringify(o))}catch(e){}};
+const sNow=()=>Date.now()+F.off;
+function fLeave(){F.leaving=true;clearInterval(F.timer);if(F.ws){try{F.ws.close()}catch(e){}}F.ws=null;F.state=null;history.replaceState(null,'','#duel');fShow('u-start')}
+$('f-cancel').onclick=fLeave;$('f-leave').onclick=fLeave;
+$('f-giveup').onclick=()=>{if(confirm('Give up this game?'))fSend({t:'giveup'})};
+$('f-again').onclick=()=>{fSend({t:'rematch'});$('f-again').disabled=true};
+$('f-copy').onclick=()=>{const u=inviteURL(F.code);try{navigator.clipboard.writeText(u).then(()=>$('f-copied').textContent='Copied',()=>$('f-copied').textContent=u)}catch(e){$('f-copied').textContent=u}};
+$('f-share').onclick=()=>{const u=inviteURL(F.code),text=`Duel me on Daily Chain. Code ${F.code}`;
+  if(navigator.share)navigator.share({title:'Daily Chain duel',text,url:u}).catch(()=>{});else $('f-copy').onclick()};
+const fCat=c=>CATS[c]?CATS[c][0]:'An answer';
+function fRender(prev,m){
+  F.me=m.you;
+  if(m.status==='waiting'){fShow('f-wait');$('f-tiles').innerHTML=[...F.code].map(c=>`<span>${c}</span>`).join('');$('f-copied').textContent='';return}
+  if(m.status==='playing'){
+    if(!prev||prev.status!=='playing'||prev.game!==m.game){fShow('f-play');$('f-chain').innerHTML='';$('f-pmsg').textContent='';$('f-input').value=''}
+    fPlayers(m);
+    if(m.links.length!==(prev&&prev.status==='playing'&&prev.game===m.game?prev.links.length:0)||!prev||prev.game!==m.game)
+      renderChain($('f-chain'),m.links.map(a=>({...a,you:a.by===F.me})),m.links.length>0);
+    const mine=m.turn===F.me,inp=$('f-input'),was=prev&&prev.status==='playing'&&prev.game===m.game&&prev.turn===m.turn&&prev.links.length===m.links.length;
+    $('f-req').textContent=L(m.req);$('f-req').classList.toggle('trap',countFor(m.req,m.cat,new Set(m.links.map(a=>a.key)))<3);
+    const opp=m.players[1-F.me]||{name:'Your friend'};
+    $('f-askh').textContent=mine?`Your turn: ${lc(ask(m.cat,m.req))}`:`${opp.name} needs ${lc(ask(m.cat,m.req))}…`;
+    $('f-sub').textContent=mine?'15 seconds. End on a hard letter to trap them.':m.held?'Checking their answer. The clock is paused.':'Their turn.';
+    inp.disabled=!mine;$('f-btn').disabled=!mine;
+    if(!was){F.busy=false;if(mine){inp.value='';if(sNow()>=m.startAt)inp.focus()}
+      const last=m.links[m.links.length-1];if(last&&last.by!==F.me){$('f-pmsg').className='msg info';$('f-pmsg').textContent=`${opp.name} played ${last.name}.`}
+      else if(last){$('f-pmsg').className='msg ok';$('f-pmsg').textContent=`${last.name} ✓`}
+      if(last)clink(last.pts||1,.25)}
+    clearInterval(F.timer);F.timer=setInterval(fTick,100);fTick();return}
+  if(m.status==='over'){clearInterval(F.timer);fShow('f-end');
+    const won=m.winner===F.me,opp=m.players[1-F.me]||{name:'Your friend',wins:0},me=m.players[F.me]||{wins:0};
+    $('f-endbig').textContent=won?'You win':`${opp.name} wins`;
+    $('f-endsub').textContent=`${m.why} The chain reached ${m.links.length} link${m.links.length===1?'':'s'}.`;
+    $('f-score').textContent=`You ${me.wins} – ${opp.wins} ${opp.name}`;
+    renderChain($('f-endchain'),m.links.map(a=>({...a,you:a.by===F.me,showPts:false})));
+    $('f-again').disabled=!!m.rematch[F.me];
+    $('f-againmsg').textContent=m.rematch[F.me]?`Waiting for ${opp.name}…`:m.rematch[1-F.me]?`${opp.name} wants a rematch.`:opp.on===false?`${opp.name} left.`:'';
+    if(!prev||prev.status!=='over')won?medalSnd():snapSnd()}
+}
+function fPlayers(m){[0,1].forEach(i=>{const p=m.players[i],el=$('f-p'+i);if(!p)return;
+  el.classList.toggle('on',m.turn===i);el.querySelector('b').innerHTML=`<i class="dot${p.on?' on':''}"></i>${esc(i===F.me?p.name+' (you)':p.name)}`;
+  el.querySelector('span').textContent=`${p.wins} win${p.wins===1?'':'s'} · ${m.links.filter(a=>a.by===i).length} links`})}
+function fTick(){const m=F.state;if(!m||m.status!=='playing')return;const t=sNow();
+  const pre=m.startAt-t,cd=$('f-count');cd.hidden=pre<=0;$('f-ask').hidden=pre>0;$('f-form').hidden=pre>0;
+  if(pre>0){cd.textContent=Math.ceil(pre/1000);$('f-bari').style.width='100%';return}
+  if(m.turn===F.me&&document.activeElement!==$('f-input')&&!$('f-input').disabled&&!$('f-input').value)$('f-input').focus();
+  const left=Math.max(0,m.deadline-t);$('f-bari').style.width=Math.min(100,left/150)+'%';$('f-bar').classList.toggle('hot',left<4000)}
+$('f-form').onsubmit=async e=>{e.preventDefault();const m=F.state;if(!m||m.status!=='playing'||m.turn!==F.me||F.busy||sNow()<m.startAt)return;
+  const inp=$('f-input'),msg=$('f-pmsg'),used=new Set(m.links.map(a=>a.key));let r=check(inp.value,m.req,used,m.cat);
+  if(r.ok&&r.unverified){F.busy=true;fSend({t:'hold'});msg.className='msg info';msg.textContent='Checking that one. Your clock is paused.';r=await referee(r,inp.value);
+    const s2=F.state;if(!s2||s2.status!=='playing'||s2.turn!==F.me||s2.links.length!==m.links.length){F.busy=false;return}}
+  if(!r.ok){F.busy=false;if(r.suggest)return showSugg(msg,inp,r.suggest);msg.className='msg bad';msg.textContent=r.msg;inp.select();buzz(30);return}
+  /* pick the next prompt: one with a few answers for the letter this word ends on */
+  const nu=new Set([...used,r.key]),opts=Object.keys(CATS).filter(c=>c!==m.cat&&countFor(r.last,c,nu)>=3);
+  F.busy=true;fSend({t:'move',name:r.name,pts:r.pts||1,nextCat:opts.length?rand(opts):''});setTimeout(()=>{F.busy=false},2500)};
+/* opening an invite link (#duel=CODE) joins straight away */
+const inviteCode=()=>{const m=location.hash.match(/^#duel=([A-Za-z0-9]{5})$/);return m?m[1].toUpperCase():''};
+if(inviteCode()){const c=inviteCode();setTimeout(()=>{if(!store.get('name','')){$('f-code').value=c;fMsg('Type your name, then tap Join.','info');$('f-name').focus()}else fJoin(c)},0)}
+
 
 /* ---------- GLOBAL (simulated) ---------- */
 const PEOPLE=['koala_kid','mia.w','jt2009','sunny','r0b','lachie_g','ava!','dev_ops','big_tom','noodle','priya','zz_top','kenji','lou','marta','sam_k','oli','fern','benny','hana'];
@@ -794,7 +987,7 @@ function gStart(){
 $('g-form').onsubmit=async e=>{e.preventDefault();const inp=$('g-input'),m=$('g-msg');
   if(G.cool>Date.now()){m.className='msg info';m.textContent='One link at a time. Wait for the timer.';return}
   let r=check(inp.value,G.req,G.recent);
-  if(r.ok&&r.unverified){if(G.busy)return;G.busy=true;m.className='msg info';m.textContent='Checking Wikipedia…';const req=G.req;r=await referee(r,inp.value);G.busy=false;if(r.ok&&G.req!==req){m.className='msg info';m.textContent=`Someone beat you to it. The chain moved to ${L(G.req)}.`;return}}
+  if(r.ok&&r.unverified){if(G.busy)return;G.busy=true;m.className='msg info';m.textContent='Checking…';const req=G.req;r=await referee(r,inp.value);G.busy=false;if(r.ok&&G.req!==req){m.className='msg info';m.textContent=`Someone beat you to it. The chain moved to ${L(G.req)}.`;return}}
   if(!r.ok){if(r.suggest)return showSugg(m,inp,r.suggest);m.className='msg bad';m.textContent=r.msg.replace('already in this chain','in the last 1,000 links');return}
   gPush({...r,who:'you',you:true});G.mine++;store.set('mine',G.mine);G.cool=Date.now()+20000;
   m.className='msg ok';m.textContent=(r.fixed?`Autocorrected to ${r.name}. `:'')+`You added link #${G.count.toLocaleString('en-AU')}. Come back in 20 seconds for another.`;inp.value='';gRender(true);};
